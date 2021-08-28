@@ -1,27 +1,30 @@
+# 借助 Github Actions 自动合并上游分支. 在新分支内添加一个 Github Action 的配置文件.
 name: Merge upstream
 
 on:
   # 推送代码后触发
   push:
-  # 定时任务触发，使用 cron 规则，这里默认一小时执行一次
+  #branches:
+  #- master
+  # 定时任务触发，使用 cron 规则，这里默认一小时执行一次。-->改成了周一10点。
   schedule:
-    - cron: '0 * * * *'
+    - cron: '0 10 * * 1'
 
 jobs:
   merge:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v0.5-win
       - name: Merge upstream
         run: |
           # 使用自己的用户名替换 username
-          git config --global user.name 'username'
+          git config --global user.name 'Shawn'
           git config --global user.email 'username@users.noreply.github.com'
 
           git pull --unshallow
 
           # 自行替换要同步的上游仓库地址
-          git remote add upstream https://github.com/upstream/upstream.git
+          git remote add upstream https://github.com/yangbai90/AsFem.git
           git fetch upstream
 
           # 可以自定义要同步的分支
