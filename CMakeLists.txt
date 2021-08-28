@@ -14,14 +14,15 @@ endif()
 ### The only things to modify is the        ###
 ### following two lines(PETSC/MPI_DIR)      ###
 ###############################################
-
-
+#set(PETSC_DIR "D:\\gitspace\\petsc-3.14.3\\arch-mswin-c-debug")
+#set(MPI_DIR "C:\\Program Files (x86)\\Microsoft SDKs\\MPI")
 if(EXISTS $ENV{MPI_DIR})
     set(MPI_DIR $ENV{MPI_DIR})
     message("MPI dir is: ${MPI_DIR}")
 else()
     message (WARNING "MPI location (MPI_DIR) is not defined in your PATH, AsFem will use the one defined in CMakeLists.txt")
-    set(MPI_DIR "/home/by/Programs/openmpi/4.1.0")
+    #set(MPI_DIR "/home/by/Programs/openmpi/4.1.0")
+	set(MPI_DIR "C:\\Program Files (x86)\\Microsoft SDKs\\MPI")
     message("MPI dir set to be: ${MPI_DIR}")
     message (WARNING "If the path is not correct, you should modify line-24 in your CMakeLists.txt")
 endif()
@@ -32,7 +33,9 @@ if(EXISTS $ENV{PETSC_DIR})
     message("PETSC dir is: ${PETSC_DIR}")
 else()
     message (WARNING "PETSc location (PETSC_DIR) is not defined in your PATH, AsFem will use the one defined in CMakeLists.txt")
-    set(PETSC_DIR "/home/by/Programs/petsc/3.14.3")
+    #set(PETSC_DIR "/home/by/Programs/petsc/3.14.3")
+	set(PETSC_DIR "D:\\gitspace\\petsc-3.14.3\\arch-mswin-c-debug")
+	#set(PETSC_DIR "D:\\gitspace\\petsc-3.14.3")
     message("PETSc dir set to be:${PETSC_DIR}")
     message (WARNING "If the path is not correct, you should modify line-35 in your CMakeLists.txt")
 endif()
@@ -43,11 +46,13 @@ endif()
 ###############################################
 include_directories("${PETSC_DIR}/include")
 include_directories("${MPI_DIR}/include")
+include_directories("D:\\gitspace\\petsc-3.14.3\\include")
 if(UNIX)
     link_libraries("${PETSC_DIR}/lib/libpetsc.so")
     link_libraries("${MPI_DIR}/lib/libmpi.so")
 elseif(MSVC)
     link_libraries("${PETSC_DIR}/lib/libpetsc.lib")
+	link_libraries("C:\\Program Files (x86)\\Microsoft SDKs\\MPI\\Lib\\x64\\msmpi.lib")
 endif()
 
 ###############################################

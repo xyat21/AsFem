@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# Visual Studio 2017 cache/options directory
+.vs/
+
 # Distribution / packaging
 .Python
 build/
@@ -102,3 +105,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+/bin
+/多尝试注释CMakeLists - 副本.txt
+/CMakeSettings.json
