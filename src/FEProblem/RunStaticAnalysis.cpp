@@ -36,7 +36,8 @@ void FEProblem::RunStaticAnalysis(){
             _feSystem.FormBulkFE(FECalcType::Projection,_feCtrlInfo.dt,_feCtrlInfo.dt,_feCtrlInfo.ctan,
                 _mesh,_dofHandler,_fe,_elmtSystem,_mateSystem,
                 _solutionSystem,
-                _equationSystem._AMATRIX,_equationSystem._RHS);
+                //_equationSystem._AMATRIX,_equationSystem._RHS);
+				_equationSystem._AMATRIX, _equationSystem._Mass, _equationSystem._Cdamp, _equationSystem._RHS);
         }
         _outputSystem.WriteResultToFile(_mesh,_dofHandler,_solutionSystem);
         _postprocessSystem.RunPostprocess(0.0,_mesh,_dofHandler,_fe,_solutionSystem);

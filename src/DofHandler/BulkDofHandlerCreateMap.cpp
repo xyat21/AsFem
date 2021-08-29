@@ -11,6 +11,7 @@
 //+++ Date   : 2020.10.18
 //+++ Purpose: Create the dofs map for the bulk element
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++ Date   : 2021.06.27  comment some dof funs needing more consideration
 
 #include "DofHandler/BulkDofHandler.h"
 
@@ -127,8 +128,8 @@ void BulkDofHandler::CreateBulkDofsMap(const Mesh &mesh,BCSystem &bcSystem,ElmtS
         mateindex=elmtSystem.GetIthBulkElmtBlock(iblock)._MateIndex;
         for(auto e:mesh.GetBulkMeshElmtIDsViaPhysicalName(domainname)){
             // now we are in the elmt id vector
-            ee=e-(mesh.GetBulkMeshElmtsNum()-mesh.GetBulkMeshBulkElmtsNum());
-            _ElmtElmtMateTypePairList[ee-1].push_back(make_pair(elmttype,matetype));
+            ee=e-(mesh.GetBulkMeshElmtsNum()-mesh.GetBulkMeshBulkElmtsNum());//主单元编号-（边界单元数）
+            _ElmtElmtMateTypePairList[ee-1].push_back(make_pair(elmttype,matetype));//主单元赋材料pair
             _ElmtLocalDofIndex[ee-1].push_back(dofindex);
             _ElmtElmtMateIndexList[ee-1].push_back(mateindex);
             for(i=1;i<=mesh.GetBulkMeshIthBulkElmtNodesNum(ee);i++){
@@ -136,7 +137,7 @@ void BulkDofHandler::CreateBulkDofsMap(const Mesh &mesh,BCSystem &bcSystem,ElmtS
                 for(j=1;j<=ndofs;j++){
                     jInd=dofindex[j-1];
                     _NodeDofsMap[iInd-1][jInd-1]=1;
-                    _NodalDofFlag[iInd-1][jInd-1]=1.0;
+                    _NodalDofFlag[iInd-1][jInd-1]=1.0;//主单元各节点dof全为真
                 }
             }
         }
@@ -192,8 +193,8 @@ void BulkDofHandler::CreateBulkDofsMap(const Mesh &mesh,BCSystem &bcSystem,ElmtS
                 ii=(j-1)*_nDofsPerNode+k-1;
 
                 if(_NodalDofFlag[iInd-1][k-1]>=0.0){
-                    _ElmtDofsMap[e-1][ii]=_NodeDofsMap[iInd-1][k-1];
-                    _RowNNZ[_NodeDofsMap[iInd-1][k-1]-1]+=_nMaxDofsPerElmt;
+                    _ElmtDofsMap[e-1][ii]=_NodeDofsMap[iInd-1][k-1];//a单元b节点的active自由度数
+                    _RowNNZ[_NodeDofsMap[iInd-1][k-1]-1]+=_nMaxDofsPerElmt;//?
 
                     if(_RowNNZ[_NodeDofsMap[iInd-1][k-1]-1]>_RowMaxNNZ){
                         _RowMaxNNZ=_RowNNZ[_NodeDofsMap[iInd-1][k-1]-1];

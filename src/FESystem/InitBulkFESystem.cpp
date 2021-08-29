@@ -11,6 +11,7 @@
 //+++ Date   : 2020.11.30
 //+++ Purpose: Initialize all the FE system for bulk and interface
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++ Date   : 2021.07.02  Init localM localC etc.
 
 #include "FESystem/FESystem.h"
 
@@ -77,15 +78,23 @@ void FESystem::InitBulkFESystem(const Mesh &mesh,
     
     _localK.Resize(dofHandler.GetMaxDofsNumPerBulkElmt(),dofHandler.GetMaxDofsNumPerBulkElmt());
     _localR.Resize(dofHandler.GetMaxDofsNumPerBulkElmt());
+	_localM.Resize(dofHandler.GetMaxDofsNumPerBulkElmt());
+	_localC.Resize(dofHandler.GetMaxDofsNumPerBulkElmt());
 
     _subK.Resize(dofHandler.GetDofsNumPerNode(),dofHandler.GetDofsNumPerNode());
     _subR.Resize(dofHandler.GetDofsNumPerNode());
+	_subM.Resize(dofHandler.GetDofsNumPerNode());
+	_subC.Resize(dofHandler.GetDofsNumPerNode());
 
     _K.resize(dofHandler.GetMaxDofsNumPerBulkElmt()*dofHandler.GetMaxDofsNumPerBulkElmt(),0.0);
     _R.resize(dofHandler.GetMaxDofsNumPerBulkElmt(),0.0);
+	_M.resize(dofHandler.GetMaxDofsNumPerBulkElmt(), 0.0);
+	_C.resize(dofHandler.GetMaxDofsNumPerBulkElmt(), 0.0);
 
     _localK.setZero();_localR.setZero();
     _subK.setZero();_subR.setZero();
+	_localM.setZero(); _localC.setZero();
+	_subM.setZero(); _subC.setZero();
 
     // set the factor to Ax=F system(this factor should be mesh dependent)
     // in order to get the most suitable one, we try to use 10 elements from the bulk

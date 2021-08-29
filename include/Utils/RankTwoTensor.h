@@ -12,6 +12,7 @@
 //+++ Purpose: Implement rank-2 tensor class for some common
 //+++          tensor calculation for solid-mechanics problem
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++ Date   : 2021.08.27  add some new operation funs
 
 #pragma once
 
@@ -187,6 +188,51 @@ public:
         }
         return temp;
     }
+
+	//B1 = A^T*B*A
+	inline RankTwoTensor TransposeClampMultiply(const MatrixXd &A) {
+		if (A.GetN() != 3 || A.GetM() != 3) {
+			MessagePrinter::PrintErrorTxt("MatrixXd A should be matrix 3x3 !");
+			MessagePrinter::AsFem_Exit();
+		}
+		RankTwoTensor temp(0.0);
+		Vector3d tempa(0.0);
+		//MatrixXd At;
+		//At = A.Transpose();
+		for (int i = 1; i <= _N; ++i) {
+			for (int j = 1; j <= _N; ++j) {
+				//temp(i,j) = 0.0;
+				//temp(i,j) = (*this).IthCol(i)*At.IthRow(j);
+				tempa(j) = (*this).IthCol(j)*A.IthCol(i);//At
+			}
+			for (int j = 1; j <= _N; ++j) {
+				temp(i, j) = tempa * A.IthCol(j);
+			}
+		}
+		return temp;
+	}
+
+	//B1 = A*B*A^T
+	inline RankTwoTensor ClampMultiply(const MatrixXd &A) {
+		if (A.GetN() != 3 || A.GetM() != 3) {
+			MessagePrinter::PrintErrorTxt("MatrixXd A should be matrix 3x3 !");
+			MessagePrinter::AsFem_Exit();
+		}
+		RankTwoTensor temp(0.0);
+		Vector3d tempa(0.0);
+		//MatrixXd At;
+		//At = A.Transpose();
+		for (int i = 1; i <= _N; ++i) {
+			for (int j = 1; j <= _N; ++j) {
+				tempa(j) = (*this).IthCol(j)*A.IthRow(i);
+			}
+			for (int j = 1; j <= _N; ++j) {
+				temp(i, j) = tempa * A.IthRow(j);//At
+			}
+		}
+		return temp;
+	}
+
     inline RankTwoTensor operator*(const RankTwoTensor &a) const{
         // return A*B(still rank-2 tensor)
         RankTwoTensor temp(0.0);
@@ -241,6 +287,7 @@ public:
             for(int j=1;j<=_N;++j){
                 // J.N. Reddy use A_ijB_ji
                 sum+=(*this)(i,j)*a(i,j);// use this to get the positive definite scale!!!
+										 //	点积 A·B=a1b1+a2b2+...+a_nb_n,结果是一个求和数值
             }
         }
         return sum;

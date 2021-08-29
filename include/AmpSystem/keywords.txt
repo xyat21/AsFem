@@ -1,0 +1,98 @@
+*Amplitude, name=Amp-1
+             0.,              0.,             0.1,            0.05,             0.3,             0.1,             0.4,             0.4
+            0.8,              1.,              1.,              1.
+*Amplitude, name=Amp-2, smooth=0.2
+             0.,              0.,             0.2,             0.1,             0.5,             0.8,              1.,              1.
+*Amplitude, name=Amp-3, definition=EQUALLY SPACED, fixed interval=0.3
+** Amplitude, name=Amp-3, definition=EQUALLY SPACED, smooth=0.1, fixed interval=0.3
+             0.,             0.2,             0.5,             0.8,              1.,              1.
+*Amplitude, name=Amp-4, definition=PERIODIC
+1,              3.,             0.5,             0.4
+             5.,             10.
+
+*Amplitude, name=Amp-5, definition=MODULATED
+            0.4,             2.5,             0.5,              2.,              4.
+*Amplitude, name=Amp-6, definition=DECAY
+            0.4,              5.,             0.5,             0.8
+*Amplitude, name=Amp-7, definition=SOLUTION DEPENDENT
+             1.,             0.3,             10.
+*Amplitude, name=Amp-8, definition=SMOOTH STEP
+             0.,              0.,             0.6,             0.4,             0.8,             0.8,              1.,              1.
+
+** Name: Load-10   Type: Concentrated force
+*Cload, follower, amplitude=S2-CONST
+Set-23, 1, 11.
+Set-23, 2, 22.
+Set-23, 3, 33.
+*Cload
+Set-23, 1, 11.
+Set-23, 2, 0.
+Set-23, 3, 33.
+*Cload, op=NEW, follower【默认无follow】
+PART-1-1.368, 2, -244964.
+PART-1-1.369, 2, -244958.
+PART-1-1.370, 2, -244957.
+PART-1-1.625, 2, -170115.
+** Name: Load-11   Type: Moment
+*Cload, op=NEW, follower
+Set-24, 4, 21.
+Set-24, 5, 22.
+*Cload, op=NEW, follower
+PART-1-1.368, 5, -2.6946e+06
+PART-1-1.369, 5, -2.69454e+06
+PART-1-1.370, 5, -2.69453e+06
+PART-1-1.625, 5, -1.87126e+06
+** Name: Load-12   Type: Moment Using Field: AnalyticalField-2
+*Cload, op=NEW, follower
+PART-1-1.368, 5, -122482.
+PART-1-1.369, 5, -122479.
+PART-1-1.370, 5, -122479.
+PART-1-1.625, 5, -85057.4
+** Name: SURFFORCE-1   Type: Pressure
+*Dsload, op=NEW, amplitude=SMOOTHFAST
+SURF-1PC, P, 0.0003533
+** Name: SURFFORCE-1   Type: Pressure Using Field: AnalyticalField-2
+*Dload, op=NEW, amplitude=SMOOTHFAST
+PART-1-1.857, P, 58.898
+PART-1-1.858, P, 70.6501
+PART-1-1.859, P, 10.8189
+PART-1-1.860, P, 16.161
+PART-1-1.861, P, 10.8179
+PART-1-1.862, P, 16.16
+PART-1-1.863, P, 10.8179
+PART-1-1.864, P, 16.1606
+。。。。
+** Name: SurfaceTraction-1   Type: Surface traction
+*Dsload, op=NEW, amplitude=S2-TRACF
+SURF-2TRACFH1905END, TRSHR, 0.00085, 1., 0., 0.
+*Dsload, op=NEW, amplitude=SMOOTH, follower=NO, constant resultant指面积不变=YES
+AIDTRACZONE, TRVEC, 0.001, 1., 0., 0.
+** Name: SurfaceTraction-2   Type: Surface traction
+*Dsload, op=NEW, amplitude=SMOOTH【默认没有是yes follower,考虑单元变形】
+AIDTRACZONE, TRVEC, 0.001, 1., 0., 0.
+
+
+*Dload, op=NEW, amplitude=SMOOTHFAST
+SET-4SEAL, GRAV, 9810., 0., 0., -1.
+** Name: GRAVITY-2   Type: Gravity
+*Dload, op=NEW, amplitude=S2-CONST
+SET-4SEAL, GRAV, 9810., 0., -0.000203874, -1.
+** Name: Load-13   Type: Body force
+*Dload, op=NEW
+SET-4SEAL, BX, 0.1
+SET-4SEAL, BY, 0.2
+SET-4SEAL, BZ, 0.3
+** Name: Load-13   Type: Body force Using Field: AnalyticalField-2
+*Dload, op=NEW
+PART-1-1.857, BX, -16670.8
+PART-1-1.858, BX, -19997.2
+PART-1-1.859, BX, -3062.24
+PART-1-1.860, BX, -4574.3
+PART-1-1.861, BX, -3061.95
+BY  BZ
+。。。。
+
+
+
+
+

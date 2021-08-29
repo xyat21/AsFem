@@ -28,7 +28,7 @@ void LinearElasticMaterial::InitMaterialProperties(const int &nDim,const Vector3
 
 void LinearElasticMaterial::ComputeStrain(const int &nDim,const vector<Vector3d> &GradDisp, RankTwoTensor &Strain) {
     if(nDim==1){
-        _GradU.SetFromGradU(GradDisp[1]);
+        _GradU.SetFromGradU(GradDisp[1]);//注意得补充2d/3d杆单元,下同  其实在shape function中已经可以转换到局部坐标系
     }
     else if(nDim==2){
         _GradU.SetFromGradU(GradDisp[1],GradDisp[2]);
@@ -36,6 +36,8 @@ void LinearElasticMaterial::ComputeStrain(const int &nDim,const vector<Vector3d>
     else if(nDim==3){
         _GradU.SetFromGradU(GradDisp[1],GradDisp[2],GradDisp[3]);
     }
+	// for our small strain		//the rotations of the mid-surface normals are less than 10°[or in the range of 10°to 15°]
+	//wiki https://en.wikipedia.org/wiki/Linear_elasticity   and general Finite strain tensors
     Strain=(_GradU+_GradU.Transpose())*0.5;
 }
 
@@ -46,7 +48,8 @@ void LinearElasticMaterial::ComputeStressAndJacobian(const vector<double> &Input
     const double nu=InputParams[1];
 
     Jacobian.SetToZeros();
-    Jacobian.SetFromEandNu(E,nu);
+    Jacobian.SetFromEandNu(E,nu);//定义stiffness tensor C_ijkl
+	// our stress: sigma=C*strain, done!
     Stress=Jacobian.DoubleDot(Strain);
 }
 
@@ -71,6 +74,10 @@ void LinearElasticMaterial::ComputeMaterialProperties(const double &t, const dou
     ComputeStressAndJacobian(InputParams,_Strain,_Stress,_Jac);
 
     _I.SetToIdentity();
+	// vonMises stress, taken from:
+	// https://en.wikipedia.org/wiki/Von_Mises_yield_criterion
+	// vonMises=sqrt(1.5*sij*sij)
+	// sij is the deviator tensor of stress
     _devStress=_Stress-_I*(_Stress.Trace()/3.0);
     Mate.ScalarMaterials["vonMises"]=sqrt(1.5*_devStress.DoubleDot(_devStress));
     Mate.Rank2Materials["strain"]=_Strain;

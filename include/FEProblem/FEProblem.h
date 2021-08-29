@@ -13,6 +13,7 @@
 //+++          It is designed as the top level of the whole AsFem
 //+++          framework
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++ Date   : 2021.07.13  add ampsystem and loadsystem header and definitions.
 
 #pragma once
 
@@ -31,6 +32,10 @@
 #include "EquationSystem/EquationSystem.h"
 #include "BCSystem/BCSystem.h"
 #include "ICSystem/ICSystem.h"
+#include "AmpSystem/AmpSystem.h"
+#include "LoadSystem/LoadSystem.h"
+
+
 #include "NonlinearSolver/NonlinearSolver.h"
 #include "TimeStepping/TimeStepping.h"
 #include "OutputSystem/OutputSystem.h"
@@ -67,6 +72,10 @@ private:
     MateSystem _mateSystem;
     BCSystem _bcSystem;
     ICSystem _icSystem;
+
+	AmpSystem _ampSystem;
+	LoadSystem _loadSystem;
+
     FE _fe;
     FESystem _feSystem;
     SolutionSystem _solutionSystem;

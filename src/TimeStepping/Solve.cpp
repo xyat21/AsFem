@@ -63,7 +63,8 @@ PetscErrorCode MyTSMonitor(TS ts,PetscInt step,PetscReal time,Vec U,void *ctx){
     VecCopy(U,user->_solutionSystem._Unew);
     
     snprintf(buff,68,"Time step=%8d, time=%13.5e, dt=%13.5e",step,time,dt);
-    str=buff;
+	//if (step < 0) return 0; /* step of -1 indicates an interpolated solution  XY*/
+	str=buff;
     MessagePrinter::PrintNormalTxt(str);
     if(!user->IsDepDebug){
         snprintf(buff,68,"  SNES solver: iters=%3d,|R0|=%12.5e,|R|=%12.5e",user->iters+1,user->rnorm0,user->rnorm);
@@ -75,7 +76,8 @@ PetscErrorCode MyTSMonitor(TS ts,PetscInt step,PetscReal time,Vec U,void *ctx){
     if(user->_fectrlinfo.IsProjection){
         user->_feSystem.FormBulkFE(FECalcType::Projection,time,dt,user->_fectrlinfo.ctan,
                                    user->_mesh,user->_dofHandler,user->_fe,user->_elmtSystem,user->_mateSystem,
-                                   user->_solutionSystem,user->_equationSystem._AMATRIX,user->_equationSystem._RHS);
+                                   //user->_solutionSystem,user->_equationSystem._AMATRIX,user->_equationSystem._RHS);
+								   user->_solutionSystem, user->_equationSystem._AMATRIX, user->_equationSystem._Mass, user->_equationSystem._Cdamp, user->_equationSystem._RHS);
 
     }
     if(step%user->_outputSystem.GetIntervalNum()==0){
@@ -93,7 +95,9 @@ PetscErrorCode MyTSMonitor(TS ts,PetscInt step,PetscReal time,Vec U,void *ctx){
     // update history variable
     user->_feSystem.FormBulkFE(FECalcType::UpdateHistoryVariable,time,dt,user->_fectrlinfo.ctan,
                                user->_mesh,user->_dofHandler,user->_fe,user->_elmtSystem,user->_mateSystem,
-                               user->_solutionSystem,user->_equationSystem._AMATRIX,user->_equationSystem._RHS);
+                               //user->_solutionSystem,user->_equationSystem._AMATRIX,user->_equationSystem._RHS);
+							   user->_solutionSystem, user->_equationSystem._AMATRIX, user->_equationSystem._Mass, user->_equationSystem._Cdamp, user->_equationSystem._RHS);
+
 
     if(user->IsAdaptive&&step>=1){
         if(user->iters<=user->OptiIters){
@@ -127,7 +131,9 @@ PetscErrorCode ComputeIResidual(TS ts,PetscReal t,Vec U,Vec V,Vec RHS,void *ctx)
                         user->_mesh,user->_dofHandler,user->_fe,
                         user->_elmtSystem,user->_mateSystem,
                         user->_solutionSystem,
-                        user->_equationSystem._AMATRIX,RHS);
+                        //user->_equationSystem._AMATRIX,RHS);
+						user->_equationSystem._AMATRIX, user->_equationSystem._Mass, user->_equationSystem._Cdamp, RHS);
+
     
     user->_bcSystem.SetBCPenaltyFactor(user->_feSystem.GetMaxAMatrixValue()*1.0e8);
 
@@ -151,14 +157,17 @@ PetscErrorCode ComputeIJacobian(TS ts,PetscReal t,Vec U,Vec V,PetscReal s,Mat A,
     VecCopy(V,user->_solutionSystem._V);
 
     user->_fectrlinfo.ctan[0]=1.0;
-    user->_fectrlinfo.ctan[1]=s;// dUdot/dU
+    user->_fectrlinfo.ctan[1]=s;// dUdot/dU		//matrix dF/dU + s*dF/dU_t两项d的系数？  to be the Jacobian of F(t,U,W+a*U) where F(t,U,U_t) = 0 is the DAE to be solved. 
+								//https://www.mcs.anl.gov/petsc/petsc-dev/docs/manualpages/TS/TSSetIJacobian.html
 
     user->_feSystem.FormBulkFE(FECalcType::ComputeJacobian,
                         t,user->_fectrlinfo.dt,user->_fectrlinfo.ctan,
                         user->_mesh,user->_dofHandler,user->_fe,
                         user->_elmtSystem,user->_mateSystem,
                         user->_solutionSystem,
-                        A,user->_equationSystem._RHS);
+                        //A,user->_equationSystem._RHS);
+						A, user->_equationSystem._Mass, user->_equationSystem._Cdamp, user->_equationSystem._RHS);
+
     
     if(user->_feSystem.GetMaxAMatrixValue()>1.0e12){
         user->_bcSystem.SetBCPenaltyFactor(1.0e20);
@@ -185,15 +194,15 @@ PetscErrorCode ComputeIJacobian(TS ts,PetscReal t,Vec U,Vec V,PetscReal s,Mat A,
 //*************************************************************************
 bool TimeStepping::Solve(Mesh &mesh,DofHandler &dofHandler,
             ElmtSystem &elmtSystem,MateSystem &mateSystem,
-            BCSystem &bcSystem,ICSystem &icSystem,
-            SolutionSystem &solutionSystem,EquationSystem &equationSystem,
+			BCSystem &bcSystem, ICSystem &icSystem, AmpSystem &ampSystem, LoadSystem &loadSystem,
+			SolutionSystem &solutionSystem,EquationSystem &equationSystem,
             FE &fe,FESystem &feSystem,
             OutputSystem &outputSystem,
             Postprocess &postprocessSystem,
             FEControlInfo &fectrlinfo){
 
     _appctx=TSAppCtx{mesh,dofHandler,
-                   bcSystem,icSystem,
+				   bcSystem,icSystem,ampSystem, loadSystem,
                    elmtSystem,mateSystem,
                    solutionSystem,equationSystem,
                    fe,feSystem,
@@ -215,13 +224,57 @@ bool TimeStepping::Solve(Mesh &mesh,DofHandler &dofHandler,
                    };
     
 
-
-    _appctx._icSystem.ApplyIC(_appctx._mesh,_appctx._dofHandler,_appctx._solutionSystem._Unew);
-    _appctx._bcSystem.ApplyInitialBC(_appctx._mesh,_appctx._dofHandler,0.0,_appctx._solutionSystem._Unew);
+	_appctx._icSystem.ApplyIC(_appctx._mesh, _appctx._dofHandler, _appctx._solutionSystem._U);//后面有需要则更改可引入Vnew和Uttnew初始条件.用t时刻，不需要t+1时刻.
+	_appctx._bcSystem.ApplyInitialBC(_appctx._mesh, _appctx._dofHandler, 0.0, _appctx._solutionSystem._U);//这两步只更新了BC 与U相关的初始值,insert模式[故对同一节点与IC不能同时存在]
+    //_appctx._icSystem.ApplyIC(_appctx._mesh,_appctx._dofHandler,_appctx._solutionSystem._Unew);
+    //_appctx._bcSystem.ApplyInitialBC(_appctx._mesh,_appctx._dofHandler,0.0,_appctx._solutionSystem._Unew);
     _appctx._feSystem.FormBulkFE(FECalcType::InitHistoryVariable,_appctx._fectrlinfo.t,_appctx._fectrlinfo.dt,_appctx._fectrlinfo.ctan,
                                  _appctx._mesh,_appctx._dofHandler,_appctx._fe,_appctx._elmtSystem,_appctx._mateSystem,
                                  _appctx._solutionSystem,
-                                 _appctx._equationSystem._AMATRIX,_appctx._equationSystem._RHS);
+                                 //_appctx._equationSystem._AMATRIX,_appctx._equationSystem._RHS);
+								_appctx._equationSystem._AMATRIX, _appctx._equationSystem._Mass, _appctx._equationSystem._Cdamp, _appctx._equationSystem._RINT);//计算单元体积 装配各变量(这里是hist相关)矩阵
+								//初始化 M C总体矩阵 其他选项再计算单元内力RHS。  粒子法不考虑单元K矩阵.
+
+	//init Mass vec and Damp vec with known values.
+
+	////initial critical time step with 0.9 reduced factor
+	PetscReal dt_cr0;
+	dt_cr0 = _appctx._feSystem.Initdtcr(_appctx._mesh);//简化下面过程
+	_appctx.dt = dt_cr0;//
+
+
+	//apply external forces: 节点集中力Pi 单元上集中力分配sum(Pij)  单元上均布力分配sum(Pik) 单元体力m*gravity 随体载荷
+	_appctx._loadSystem.ApplyLoad(_appctx._mesh, _appctx._dofHandler, _appctx._fe, FECalcType::ComputeResidual, _appctx._fectrlinfo.t, _appctx._solutionSystem._U, _appctx._equationSystem._REXT);
+	//RHS is total force, here last account the constraint force, to make constrainted dof to be 0. and return Cforce
+	_appctx._feSystem.CalcRF(_appctx._dofHandler, _appctx._equationSystem._REXT, _appctx._equationSystem._RINT, _appctx._equationSystem._RHS, _appctx._equationSystem._RF);
+	_appctx._feSystem.CalcreRF(_appctx._equationSystem._RF, _appctx._solutionSystem._reRF);
+	_appctx._feSystem.CalcUtt(_appctx._equationSystem._Mass, _appctx._equationSystem._RHS, _appctx._solutionSystem._Utt); 要补角加速度、惯性矩 = > 质量矩阵4 - 6;
+	//init solution t-1时刻
+	_appctx._feSystem.InitUold(_appctx.dt, _appctx._equationSystem._Cdamp, _appctx._solutionSystem._Uold, _appctx._solutionSystem._U, _appctx._solutionSystem._V, _appctx._solutionSystem._Utt);
+
+	for (_appctx.time = 0.0; _appctx.time < _appctx._fectrlinfo.t; _appctx.time += _appctx.dt) {
+		_appctx._feSystem.SolveUnew(_appctx.dt, _appctx._equationSystem._Cdamp, _appctx._solutionSystem._Uold, _appctx._solutionSystem._U, _appctx._solutionSystem._Unew, _appctx._solutionSystem._Utt);
+		//逆运动 消除平动和转动的刚体位移，得到变形位移Ud，计算单元内力
+
+		//_appctx._feSystem.SolveUd();		
+
+		_appctx._feSystem.FormBulkFE(FECalcType::ComputeResidual,
+			_appctx._fectrlinfo.t, _appctx._fectrlinfo.dt, _appctx._fectrlinfo.ctan,
+			_appctx._mesh, _appctx._dofHandler, _appctx._fe,
+			_appctx._elmtSystem, _appctx._mateSystem,
+			_appctx._solutionSystem,
+			_appctx._equationSystem._AMATRIX, _appctx._equationSystem._Mass, _appctx._equationSystem._Cdamp, _appctx._equationSystem._RINT);
+
+		VecCopy(_appctx._solutionSystem._U, _appctx._solutionSystem._Uold);
+		VecCopy(_appctx._solutionSystem._Unew, _appctx._solutionSystem._U);
+
+
+	}
+
+
+
+
+
 
     TSSetIFunction(_ts,_appctx._equationSystem._RHS,ComputeIResidual,&_appctx);
     TSSetIJacobian(_ts,_appctx._equationSystem._AMATRIX,_appctx._equationSystem._AMATRIX,ComputeIJacobian,&_appctx);

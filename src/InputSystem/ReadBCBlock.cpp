@@ -12,10 +12,11 @@
 //+++ Purpose: This function can read the [bcs] block and its 
 //+++          subblock from our input file.
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++ Date   : 2021.04.19  add abaqus inp BC info.
 
 #include "InputSystem/InputSystem.h"
 
-bool InputSystem::ReadBCBlock(ifstream &in,string str,const int &lastendlinenum,int &linenum,BCSystem &bcSystem,DofHandler &dofHandler){
+bool InputSystem::ReadBCBlock(ifstream &in,string str,const int &lastendlinenum,int &linenum, Mesh &mesh, BCSystem &bcSystem,DofHandler &dofHandler){////Mesh是加的  3个地方同时改
     // each bc block should looks like:
     //   [bc1]
     //     type=dirichlet [neumann,user1,user2,user3...]
@@ -26,6 +27,7 @@ bool InputSystem::ReadBCBlock(ifstream &in,string str,const int &lastendlinenum,
     // important: now , str already contains [bcs] !!!
 
     bool HasBCBlock=false;
+	bool abaFlag = false;
     BCBlock bcblock;
     string tempstr,str0;
     vector<double> number;
@@ -38,6 +40,10 @@ bool InputSystem::ReadBCBlock(ifstream &in,string str,const int &lastendlinenum,
     bool HasDof=false;
 
     bcblock.Init();
+	vector<std::pair<string, vector<int>> > _BoudaryDofFromInp;
+	vector<std::pair<vector<string>, double> > _DsloadFromInp;
+	vector<std::pair<string, vector<string>> > _DofwithSets;
+	vector<string> _DofNameList;
 
     // now str="[bcs]"
     while (linenum<=lastendlinenum){
@@ -57,25 +63,55 @@ bool InputSystem::ReadBCBlock(ifstream &in,string str,const int &lastendlinenum,
         if((str.find('[')!=string::npos&&str.find(']')!=string::npos)&&
           (str.find("[end]")==string::npos&&str.find("[END]")==string::npos)){
             HasBCBlock=false;
-            tempstr=StringUtils::RemoveStrSpace(str);
+            tempstr=StringUtils::RemoveStrSpace(str);//[]内是bcs    这里开始改成ABAQUS 下面增加判断 然后替换读入数据
             if(tempstr.size()<3){
                 MessagePrinter::PrintErrorInLineNumber(linenum);
                 MessagePrinter::PrintErrorTxt("no boundary block name can be found in [bcs] sub block");
                 MessagePrinter::AsFem_Exit();
                 return false;
             }
-            else{
+			else if (tempstr.size() == 12 && tempstr.find("bcinabaqus") != string::npos) {//bcINabaqus
+				abaFlag = true;
+				//bcblock._BCBlockName = tempstr.substr(1, tempstr.size() - 1 - 1);				
+				_BoudaryDofFromInp = mesh.GetBoundaryDoFListPtr();
+				_DsloadFromInp = mesh.GetDsLoadListPtr();
+				//_DofwithSets;
+				_DofNameList = dofHandler.GetDofNameList();
+				vector<string> dof2sets;
+				for (auto it : _DofNameList) {
+					dof2sets.clear();
+					for (auto ib : _BoudaryDofFromInp) {//这是按约束组及其约束dofs
+						for (auto ih : ib.second) {
+							if (to_string(ih) == it) {//自由度相同 则保存sets
+								dof2sets.push_back(ib.first);
+								break;
+							}
+						}
+					}
+					_DofwithSets.push_back(make_pair(it, dof2sets));//按自由度找约束组
+				}
+
+				//这里label都设为true,先获取基本信息，在后面循环建立addBCblock
+				HasBCBlock = true; HasElmt = true; HasDof = true; HasBoundary = true; 		//bcblock._IsTimeDependent=true;
+				//getline(in, str); linenum += 1;
+				//str0 = str;
+				//str = StringUtils::RemoveStrSpace(str0);
+				//str = StringUtils::StrToLower(str);
+				//if (StringUtils::IsCommentLine(str) || str.size() < 1) continue;
+			}
+			else{
                 bcblock.Init();
                 bcblock._BCBlockName=tempstr.substr(1,tempstr.size()-1-1);
                 HasBCBlock=true;
             }
             while(str.find("[end]")==string::npos&&str.find("[END]")==string::npos){
-                getline(in,str);linenum+=1;
+				if ((str.find("bcinabaqus") != string::npos)) { getline(in, str); linenum += 1; break; }//
+				getline(in,str);linenum+=1;
                 str0=str;
                 str=StringUtils::RemoveStrSpace(str0);
                 str=StringUtils::StrToLower(str);
                 if(StringUtils::IsCommentLine(str)||str.size()<1) continue;
-                if(str.find("type=")!=string::npos){
+                if(str.find("type=")!=string::npos){//这里增加读取ABAQUS，利用下面的boundary组名称的dofs转换成 下述边界类型
                     string substr=str.substr(str.find_first_of('=')+1);
                     if(substr.find("dirichlet")!=string::npos && substr.length()==9){
                         bcblock._BCTypeName="dirichlet";
@@ -276,10 +312,87 @@ bool InputSystem::ReadBCBlock(ifstream &in,string str,const int &lastendlinenum,
                     }
                 }
             }
-            if(HasDof&&HasBoundary&&HasElmt&&HasBCBlock){
-                HasBCBlock=true;
-                if(!HasValue) bcblock._BCValue=0.0;
-                bcSystem.AddBCBlock2List(bcblock);
+            if(HasDof&&HasBoundary&&HasElmt&&HasBCBlock){//完成一个BC数据读取后，添加到bcSystem中
+				if (abaFlag) {
+					for (auto it : _DofwithSets) {//vector<std::pair<string, vector<int>> > _BoudaryDofFromInp;  vector<std::pair<vector<string>, double> > _DsloadFromInp;
+						//ibc++;							//_DofwithSets
+						if (it.first == "P") { break; }
+						bcblock.Init();
+						bclist.clear();
+						bcblock._BCBlockName = "bcs" + it.first;//避免多自由度重复name+to_string(ibc)    .first       .second
+						//HasBCBlock = true;
+						for (const auto iv : it.first) {
+							string ivs;
+							ivs = iv;//ivs.c_str即iv
+							if (ivs > to_string(3) && ivs != "P") {//以三维的六自由度判断，1-3是位移，4-6是转角。   大小顺序0Aa
+								bcblock._BCTypeName = "nodalneumann";
+								bcblock._BCType = BCType::NODALNEUMANNBC;
+								//HasElmt = true;
+							}
+							else if (ivs <= to_string(3) && ivs != "P") {
+								bcblock._BCTypeName = "nodaldirichlet";
+								bcblock._BCType = BCType::NODALDIRICHLETBC;
+								//HasElmt = true;
+							}
+							bcblock._DofName = ivs;
+							if (!dofHandler.IsValidDofName(bcblock._DofName)) {
+								MessagePrinter::PrintErrorInLineNumber(linenum);
+								msg = "dof name is invalid in [" + bcblock._BCBlockName + "] sub block, 'dof=dof_name' in [dofs] block is expected";
+								MessagePrinter::PrintErrorTxt(msg);
+								MessagePrinter::AsFem_Exit();
+								return false;
+							}
+							//bcblock._DofIndex = dofHandler.GetDofIndexViaName(bcblock._DofName);//旧code
+							bcblock._DofID = dofHandler.GetDofIDviaDofName(bcblock._DofName);
+							//HasDof = true;						
+						}
+						bcblock._BoundaryNameList = it.second;
+						//HasBoundary=true;
+						//bcblock._IsTimeDependent=false;//默认的
+
+						if (!HasValue) bcblock._BCValue = 0.0;
+						bcSystem.AddBCBlock2List(bcblock);
+					}
+					//后面继续添加PressureBC
+					int ibc = 0;
+					for (auto it : _DsloadFromInp) {//vector<std::pair<string, vector<int>> > _BoudaryDofFromInp;  vector<std::pair<vector<string>, double> > _DsloadFromInp;   amp,set,type    value
+						//=======重置 循环=======
+						bcblock.Init();
+						bclist.clear();
+						ibc++;
+						bcblock._BCBlockName = "bcs" + it.first[2] + to_string(ibc);//bcsP1
+						//HasBCBlock=true;
+						bcblock._BCTypeName = "pressure";
+						bcblock._BCType = BCType::PRESSUREBC;
+						//HasElmt = true;
+						bcblock._DofName = it.first[2];
+						if (!dofHandler.IsValidDofName(bcblock._DofName)) {
+							MessagePrinter::PrintErrorInLineNumber(linenum);
+							msg = "dof name is invalid in [" + bcblock._BCBlockName + "] sub block, 'dof=dof_name' in [dofs] block is expected";
+							MessagePrinter::PrintErrorTxt(msg);
+							MessagePrinter::AsFem_Exit();
+							return false;
+						}
+						bcblock._DofID = dofHandler.GetDofIDviaDofName(bcblock._DofName);
+						//HasDof = true;		
+						vector<string> Pset;
+						Pset.push_back(it.first[1]);
+						bcblock._BoundaryNameList = Pset;
+						//HasBoundary=true;
+						//Amp 幅值是table input型的，而原始asfem只能是函数表达式型的  !!看后面能根据_IsTimeDependent改为A不？
+						HasValue = true;
+						bcblock._IsTimeDependent = true;
+						bcblock._BCValue = 1.0;
+						//这里也可以有不随时间变的常压力值 bcblock._BCValue=number[0]; false
+
+						bcSystem.AddBCBlock2List(bcblock);
+					}
+				}
+				else {
+					HasBCBlock = true;
+					if (!HasValue) bcblock._BCValue = 0.0;
+					bcSystem.AddBCBlock2List(bcblock);
+				}
             }
             else{
                 msg="information is not complete in [bcs] sub block, some information is missing in ["+bcblock._BCBlockName+"]";

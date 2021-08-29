@@ -12,6 +12,9 @@
 //+++ Purpose: here we apply the boundary conditions we defined in
 //+++          each [bcs] sub blocks
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++ Date   : 2021.07.15  comment BC need to consider more.
+
+//	RHS=ES+IS+CS = External force + Internal force + Constrained force
 
 #include "BCSystem/BCSystem.h"
 #include "DofHandler/DofHandler.h"
@@ -285,7 +288,7 @@ void BCSystem::ApplyInitialBC(const Mesh &mesh,const DofHandler &dofHandler,cons
         if(it._IsTimeDependent) bcvalue=t*it._BCValue;
         bcnamelist=it._BoundaryNameList;
         DofIndex=it._DofID;
-        if(it._BCType==BCType::DIRICHLETBC){
+        if(it._BCType==BCType::DIRICHLETBC){//»¹ÓÐnodaldirichletÄØ
             for(auto bcname:bcnamelist){
                 rankne=mesh.GetBulkMeshElmtsNumViaPhysicalName(bcname)/_size;
                 eStart=_rank*rankne;

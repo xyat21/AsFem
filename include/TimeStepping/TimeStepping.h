@@ -12,6 +12,7 @@
 //+++ Purpose: Define time stepping system for transient analysis
 //+++          in AsFem
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++ Date   : 2021.07.30  add new defined ampsystem and loadsystem header and funs.
 
 #pragma once
 
@@ -25,6 +26,9 @@
 
 #include "BCSystem/BCSystem.h"
 #include "ICSystem/ICSystem.h"
+
+#include "AmpSystem/AmpSystem.h"
+#include "LoadSystem/LoadSystem.h"
 
 #include "MateSystem/MateSystem.h"
 #include "ElmtSystem/ElmtSystem.h"
@@ -54,7 +58,9 @@ typedef struct{
     DofHandler _dofHandler;
     BCSystem _bcSystem;
     ICSystem _icSystem;
-    ElmtSystem _elmtSystem;
+	AmpSystem _ampSystem;
+	LoadSystem _loadSystem;
+	ElmtSystem _elmtSystem;
     MateSystem _mateSystem;
     SolutionSystem _solutionSystem;
     EquationSystem _equationSystem;
@@ -102,7 +108,7 @@ public:
 
     bool Solve(Mesh &mesh,DofHandler &dofHandler,
             ElmtSystem &elmtSystem,MateSystem &mateSystem,
-            BCSystem &bcSystem,ICSystem &icSystem,
+            BCSystem &bcSystem,ICSystem &icSystem, AmpSystem &_ampSystem, LoadSystem &_loadSystem,
             SolutionSystem &solutionSystem,EquationSystem &equationSystem,
             FE &fe,FESystem &feSystem,
             OutputSystem &outputSystem,

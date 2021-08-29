@@ -11,11 +11,13 @@
 //+++ Date   : 2021.02.18
 //+++ Purpose: implement Abaqus' inp mesh file importer
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++ Date   : 2021.07.21  add more abaqusIO funs concerning other inp keylines
 
 #pragma once
 #include <iostream>
 #include <iomanip>
 #include <vector>
+#include <array>
 #include <map>
 #include <algorithm>
 #include "Mesh/MeshIOBase.h"
@@ -35,16 +37,59 @@ public:
     virtual void SetMeshFileName(string filename)override{_MeshFileName=filename;_HasSetMeshFileName=true;}
     virtual string GetMeshFileName()const override{return _MeshFileName;}
 
+	// for Amp/boundary/load information   =====XY======
+	//inline string GetAbaqusFileName()const { return _MeshFileName; }   //
+	//vector<std::pair<pair<string, string>, vector<std::pair<double, double> >> > GetAmpsTimeFromInp();
+	vector<std::pair<std::vector<std::string>, std::vector<double>> >  GetAmpsTimeFromInp();
+	vector<std::pair<string, vector<int>> > GetBoundaryDofFromInp();
+	vector<std::pair<pair<string, string>, vector<double>> > GetCLoadFromInp();
+	vector<std::pair<vector<string>, double> > GetDsLoadFromInp();
+	vector<std::pair<vector<string>, vector<double>> > GetDloadsFromInp();
+	vector<std::pair<string, std::vector<string>> > GetLoadStrListFromInp();
+	struct material_info {
+		string matname;
+		double density;
+		double Youngs_modulus;
+		double poisson;
+		double damp_alpha = 0.0;
+		double damp_beta = 0.0;
+	};//Mate;
+	vector<material_info> Mate;
+	vector<material_info> GetMateFromInp();
+	vector<std::pair<pair<string, string>, vector<double>> > Cloads;
+	vector<std::pair<vector<string>, double> > Dsloads;//string:amp,setname,type   double:value,directions
+	vector<std::pair<vector<string>, vector<double>> > Dloads;//string:amp,setname,type   double:value,directions
+	vector<std::pair<string, std::vector<string>> > Loadlines;
+
+	int GetBeamSectionNumFromInp() const;
+	int GetSolidSectionNumFromInp() const;
+	int GetShellSectionNumFromInp() const;
+	vector<pair<array<string, 3>, pair<array<double, 2>, array<double, 3>>> > GetBeamSectionESetsandMatAdFromInp() const;
+
+	vector<pair<pair<string, string>, double>> GetSolidSectionESetsandMatAFromInp() const;
+	vector<pair<pair<string, string>, double>> GetShellSectionESetsandMatTFromInp() const;
+
+	struct step_info {
+		//vector<int> static_run;
+		//vector<std::pair<pair<string, string>, vector<std::pair<double, double> >> > AmpsTime;	//amp name/type/value-table
+		vector<std::pair<std::vector<std::string>, std::vector<double>> > AmpsTime;
+		vector<std::pair<string, vector<int>> > boundaryDoF;
+		//vector<std::pair<string, vector<double>> > CLoad;
+		//vector<int> output;
+	}Step;		//History
+
+
 private:
     int GetElmtNodesNumFromInp() const;
     int GetElmtDimFromInp() const;
-    int GetElmtOrderFromInp()const;
+	int GetSpaceDimFromInp() const;
+	int GetElmtOrderFromInp()const;
     int GetElmtVTKCellTypeFromInp()const;
     MeshType GetElmtMeshTypeFromInp()const;
     string GetElmtMeshTypeNameFromInp()const;
 
     int GetSubElmtNodesNumFromInp() const;
-    int GetSubElmtDimFromGmshInp() const;
+	int GetSubElmtDimFromInp() const;//原代码多了FromGmshInp
     int GetSubElmtOrderFromInpElmt()const;
     MeshType GetSubElmtMeshTypeFromInp()const;
 
@@ -60,11 +105,14 @@ private:
     int GetSurfaceElmtsNumFromInp()const;
     int GetSurfaceEdgeIDViaSurfaceNameFromInp(string surfacesetname)const;
     vector<int> GetSurfaceElmtIDViaSurfaceNameFromInp(string surfacesetname)const;
+	//vector<int> GetElmtIDViaElSetNameFromInp(string elsetname)const;
+	//vector<int> GetNodeIDViaNSetNameFromInp(string nsetname)const;
 
 
     ifstream _in;
 
-    int _nMaxDim=-1,_nMinDim=4;
+    int _nMaxDim=-1,_nMinDim=4;//mesh dimension
+	int _nSpaceDim = -1;	   //space dimension
     int _nPhysicGroups=0;
     int _nNodeSetPhysicalGroups=0;
     int _nNodes=0,_nElmts=0;
@@ -76,5 +124,9 @@ private:
     int _nNodesPerLineElmt=0;
     int _nNodesPerSurfaceElmt=0;
     int _nOrder=1;
+
+	int _BeamSectionNum;
+	int _SolidSectionNum;
+	int _ShellSectionNum;
 
 };

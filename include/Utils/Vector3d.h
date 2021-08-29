@@ -12,6 +12,7 @@
 //+++ Purpose: Implement the vector (3 components) operator and 
 //+++          calculation
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++ Date   : 2021.04.20  add some new operation funs, like crossdot
 
 #pragma once
 
@@ -129,7 +130,14 @@ public:
     // Please put all the friend funs to the cpp file !!!
     friend Vector3d operator*(const double &val,const Vector3d &a);
 
-    inline double operator*(const Vector3d &a)const{
+	inline Vector3d operator^(const Vector3d &a) {//cross
+		Vector3d temp(0.0);
+		temp._vals[0] = _vals[1] * a._vals[2] - _vals[2] * a._vals[1];
+		temp._vals[1] = -_vals[0] * a._vals[2] + _vals[2] * a._vals[0];
+		temp._vals[2] = _vals[0] * a._vals[1] - _vals[1] * a._vals[0];
+		return temp;
+	}
+	inline double operator*(const Vector3d &a)const{//dot
         return _vals[0]*a._vals[0]
               +_vals[1]*a._vals[1]
               +_vals[2]*a._vals[2];

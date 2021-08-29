@@ -11,14 +11,15 @@
 //+++ Date   : 2020.11.29
 //+++ Purpose: implement the lagrange shape function in 1d case,i.e. edge2,edge3,edge4  
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++ Date   : 2021.08.22  add some comments and reference links
 
 #include "FE/LagrangeShapeFun.h"
 
 void LagrangeShapeFun::Compute1DLagrangeShapeFun(const double &xi,const Nodes &nodes,bool flag){
     _DetJac=0.0;
     switch (GetShapeFunNums()){
-        case 2:{
-            (*this)(1,0)= 0.5*(1.0-xi);
+	case 2: {// taken from: http://www.sd.ruhr-uni-bochum.de/downloads/Shape_funct.pdf
+			(*this)(1,0)= 0.5*(1.0-xi);
             (*this)(1,1)=-0.5;
 
             (*this)(2,0)= 0.5*(1.0+xi);
@@ -53,12 +54,12 @@ void LagrangeShapeFun::Compute1DLagrangeShapeFun(const double &xi,const Nodes &n
     }
 
     _dxdxi=0.0;_dydxi=0.0;_dzdxi=0.0;
-    for(int i=1;i<=GetShapeFunNums();i++){
-        _dxdxi+=(*this)(i,1)*nodes(i,1);
+    for(int i=1;i<=GetShapeFunNums();i++){//  |J|
+        _dxdxi+=(*this)(i,1)*nodes(i,1);//sigma [J]i之和=sigma (dNi/dxi*Xi)
         _dydxi+=(*this)(i,1)*nodes(i,2);
         _dzdxi+=(*this)(i,1)*nodes(i,3);
     }
-    _DetJac=sqrt(_dxdxi*_dxdxi+_dydxi*_dydxi+_dzdxi*_dzdxi);
+    _DetJac=sqrt(_dxdxi*_dxdxi+_dydxi*_dydxi+_dzdxi*_dzdxi);//|J|=det J, 为求逆矩阵[J]^-1=J*/|J|
 
     if(abs(_DetJac)<1.0e-15){
         MessagePrinter::PrintErrorTxt("singular element in 1D case, this error occurs in your 1D shape function calculation");
@@ -66,9 +67,9 @@ void LagrangeShapeFun::Compute1DLagrangeShapeFun(const double &xi,const Nodes &n
     }
     for(int i=1;i<=GetShapeFunNums();i++){
         if(flag){
-            (*this)(i,1)=(*this)(i,1)/_DetJac;
+            (*this)(i,1)=(*this)(i,1)/_DetJac;//	(dNi/dxi)/|J|
         }
-        _shape_value[i-1]=(*this)(i,0);
+        _shape_value[i-1]=(*this)(i,0);//https://zhuanlan.zhihu.com/p/67454027
         _shape_grad[i-1].setZero();
         _shape_grad[i-1](1)=(*this)(i,1);
     }

@@ -13,6 +13,7 @@
 //+++          So, in this class, the input file for AsFem is only
 //+++          accessible via this class
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++ Date   : 2021.07.13  add definitions for AmpSystem and LoadSystem etc.
 
 #pragma once
 
@@ -45,6 +46,13 @@
 #include "Postprocess/Postprocess.h"
 #include "FEProblem/FEJobBlock.h"
 
+#include "AmpSystem/AmpSystem.h"
+#include "LoadSystem/LoadSystem.h"
+//#include "SectionSystem/SectionSystem.h"
+//#include "InteractSystem/InteractSystem.h"
+//#include "CosimSystem/CosimSystem.h"
+
+
 
 class InputSystem{
 public:
@@ -52,9 +60,9 @@ public:
     InputSystem();
     void InitInputSystem(int args,char *argv[]);
 
-    bool ReadInputFile(Mesh &mesh,DofHandler &dofHandler,ElmtSystem &elmtSystem,MateSystem &mateSystem,
-                       BCSystem &bcSystem,ICSystem &icSystem,
-                       FE &fe,
+    bool ReadInputFile(Mesh &mesh,DofHandler &dofHandler,ElmtSystem &elmtSystem,MateSystem &mateSystem,//SectionSystem &sectionSystem,
+					   BCSystem &bcSystem, ICSystem &icSystem, AmpSystem &ampSystem, LoadSystem &loadSystem,
+					   FE &fe,//	InteractSystem &interactSystem, CoSimlulation &cosimSystem,
                        SolutionSystem &solutionSystem,
                        OutputSystem &outputSystem,
                        Postprocess &postProcessSystem,
@@ -69,15 +77,44 @@ private:
     //*** functions for reading each block
     //******************************************************
     bool ReadMeshBlock(ifstream &in,string str,int &linenum,Mesh &mesh);
-    bool ReadDofsBlock(ifstream &in,string str,int &linenum,DofHandler &dofHandler);
-    bool ReadElmtBlock(ifstream &in,string str,const int &lastendlinenum,int &linenum,ElmtSystem &elmtSystem,DofHandler &dofHandler);
-    bool ReadMateBlock(ifstream &in,string str,const int &lastendlinenum,int &linenum,MateSystem &mateSystem);
+    //bool ReadDofsBlock(ifstream &in,string str,int &linenum,DofHandler &dofHandler);
+    //bool ReadElmtBlock(ifstream &in,string str,const int &lastendlinenum,int &linenum,ElmtSystem &elmtSystem,DofHandler &dofHandler);
+    //bool ReadMateBlock(ifstream &in,string str,const int &lastendlinenum,int &linenum,MateSystem &mateSystem);
+	bool ReadDofsBlock(ifstream &in, string str, int &linenum, Mesh &mesh, DofHandler &dofHandler);
+	bool ReadElmtBlock(ifstream &in, string str, const int &lastendlinenum, int &linenum, Mesh &mesh, ElmtSystem &elmtSystem, DofHandler &dofHandler);//MeshÊÇ¼ÓµÄ
+	bool ReadMateBlock(ifstream &in, string str, const int &lastendlinenum, int &linenum, Mesh &mesh, MateSystem &mateSystem);
 
     //******************************************************
     //*** functions for reading bcs and ics
     //******************************************************
-    bool ReadBCBlock(ifstream &in,string str,const int &lastendlinenum,int &linenum,BCSystem &bcSystem,DofHandler &dofHandler);
-    bool ReadICBlock(ifstream &in,string str,const int &lastendlinenum,int &linenum,ICSystem &icSystem,DofHandler &dofHandler);
+    //bool ReadBCBlock(ifstream &in,string str,const int &lastendlinenum,int &linenum,BCSystem &bcSystem,DofHandler &dofHandler);
+	bool ReadBCBlock(ifstream &in, string str, const int &lastendlinenum, int &linenum, Mesh &mesh, BCSystem &bcSystem, DofHandler &dofHandler);
+	bool ReadICBlock(ifstream &in,string str,const int &lastendlinenum,int &linenum,ICSystem &icSystem,DofHandler &dofHandler);
+
+	//******************************************************
+	//*** functions for reading amplitudes definition   XY
+	//******************************************************
+	bool ReadAmpBlock(ifstream &in, string str, const int &lastendlinenum, int &linenum, Mesh &mesh, AmpSystem &ampSystem);
+
+	//******************************************************
+	//*** functions for reading [loads] definition   XY
+	//******************************************************
+	bool ReadLoadBlock(ifstream &in, string str, const int &lastendlinenum, int &linenum, Mesh &mesh, LoadSystem &loadSystem);
+
+	//******************************************************
+	//*** functions for reading [sections]    XY
+	//******************************************************
+	//bool ReadSectionBlock(ifstream &in, string str, const int &lastendlinenum, int &linenum, Mesh &mesh, SectionSystem &sectionSystem);
+
+	//******************************************************
+	//*** functions for reading [interactions]    XY
+	//******************************************************
+	//bool ReadInteractionBlock(ifstream &in, string str, const int &lastendlinenum, int &linenum, Mesh &mesh, InteractSystem &interactSystem);
+
+	//******************************************************
+	//*** functions for reading [cosimulation]    XY
+	//******************************************************
+	//bool ReadCosimulationBlock(ifstream &in, string str, const int &lastendlinenum, int &linenum, Mesh &mesh, CoSimlulation &cosimSystem);
 
     //******************************************************
     //*** functions for reading [qpoint]

@@ -12,6 +12,7 @@
 //+++ Purpose: Implement general dofhandler for our bulk mesh
 //+++          This class should be capable to manage DoFs, DoF maps...
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++ Date   : 2021.07.05  add two Get funs
 
 #pragma once
 
@@ -51,8 +52,10 @@ public:
     inline int    GetMaxRowNNZ()const{return _RowMaxNNZ;}
     int         GetDofIDviaDofName(string dofname)const;
     vector<int> GetDofsIndexFromNameVec(vector<string> namelist)const;
+	vector<string> GetDofNameList()const { return _DofNameList; }
 
-    inline void GetIthBulkElmtDofIndex(const int &e,vector<int> &elDofs,vector<double> &elDofsActiveFlag)const{
+	inline vector<vector<double>>    GetNodalDofFlag()const { return _NodalDofFlag; }
+	inline void GetIthBulkElmtDofIndex(const int &e,vector<int> &elDofs,vector<double> &elDofsActiveFlag)const{
         for(int i=0;i<static_cast<int>(_ElmtDofsMap[e-1].size());i++){
             elDofs[i]=_ElmtDofsMap[e-1][i];
             elDofsActiveFlag[i]=_ElmtDofFlag[e-1][i];

@@ -19,7 +19,10 @@
 enum class FECalcType{
     ComputeResidual,
     ComputeJacobian,
-    Projection,
+	//ComputeExternalForce,
+	//ComputeConstraintForce,
+
+	Projection,
     InitMaterialAndProjection,
     InitHistoryVariable,
     UpdateHistoryVariable

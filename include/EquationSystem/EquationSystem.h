@@ -12,6 +12,7 @@
 //+++ Purpose: Define equation system in AsFem, here you can access
 //+++          K matrix and Residual of our system equations
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++ Date   : 2021.08.02  add equation supplymenary variables
 
 #pragma once
 
@@ -34,7 +35,12 @@ public:
 
 public:
     Mat _AMATRIX;
-    Vec _RHS;
+	Vec _RHS;//right hand total force.
+	Vec _RINT;//internal force
+	Vec _RF;//constrain induced reaction force
+	Vec _REXT;//external force
+	Vec _Mass;
+	Vec _Cdamp;
 private:
     int _nDofs;
 };

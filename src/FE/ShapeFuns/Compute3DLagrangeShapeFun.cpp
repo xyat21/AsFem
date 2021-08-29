@@ -408,9 +408,9 @@ void LagrangeShapeFun::Compute3DLagrangeShapeFun(const double &xi,
             (*this)(i,2) = temp2;
             (*this)(i,3) = temp3;
         }
-        _shape_value[i-1]=(*this)(i,0);
-        _shape_grad[i-1](1)=(*this)(i,1);
-        _shape_grad[i-1](2)=(*this)(i,2);
-        _shape_grad[i-1](3)=(*this)(i,3);
+        _shape_value[i-1]=(*this)(i,0);  //ith node Ni shape fun value
+        _shape_grad[i-1](1)=(*this)(i,1);//dNi/dx=sum(XJ11dNi/dxi+XJ12dNi/deta+XJ13dNi/dzeta)
+        _shape_grad[i-1](2)=(*this)(i,2);//dNi/dy=sum(XJ21dNi/dxi+XJ22dNi/deta+XJ23dNi/dzeta)
+        _shape_grad[i-1](3)=(*this)(i,3);//dNi/dz=sum(XJ31dNi/dxi+XJ32dNi/deta+XJ33dNi/dzeta)
     }
 }

@@ -9,11 +9,13 @@
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //+++ Author : Yang Bai
 //+++ Date   : 2020.10.18
+//+++ Reviewer : Xiaoyuan @ 2021.08.20
 //+++ Purpose: Define the general Matrix  in AsFem
 //+++          we mainly use this for the calculation of jacobian
 //+++          If one wants to use Eigen's MatrixXd, please use
 //+++          Eigen::MatrixXd, which is different with ours !!!
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++ Date   : 2021.08.28  add some new operation funs
 
 #pragma once
 
@@ -165,7 +167,7 @@ public:
     //*** for *
     inline MatrixXd operator*(const double &val)const{
         MatrixXd temp(_M,_N);
-        for(int i=0;i<_MN;++i) temp._vals[i]=_vals[i]+val;
+        for(int i=0;i<_MN;++i) temp._vals[i]=_vals[i]*val;
         return temp;
     }
     inline VectorXd operator*(const VectorXd &a)const{
@@ -185,7 +187,26 @@ public:
         }
         return temp;
     }
-    inline MatrixXd operator*(const MatrixXd &a)const{
+
+	inline Vector3d operator*(const Vector3d &a)const {
+		Vector3d temp(0.0);
+		if (_N != 3 || _M != 3) {
+			MessagePrinter::PrintErrorTxt("A*b should be applied for A matrix 3x3 has the same cols as b vector 1x3 !");
+			MessagePrinter::AsFem_Exit();
+		}
+		else {
+			for (int i = 1; i <= 3; i++) {
+				temp(i) = 0.0;
+				for (int j = 1; j <= _M; j++) {
+					temp(i) += (*this)(i, j)*a(j);
+				}
+			}
+			return temp;
+		}
+		return temp;
+	}
+
+	inline MatrixXd operator*(const MatrixXd &a)const{
         MatrixXd temp(_M,a.GetN());
         if(_N!=a.GetM()){
             MessagePrinter::PrintErrorTxt("A*B should be applied for A matrix has the same cols as the rows of B matrix!");
@@ -255,6 +276,40 @@ public:
         }
         return Mat.determinant();
     }
+
+	inline MatrixXd Transpose()const {
+		MatrixXd temp(_N, _M);
+		for (int i = 1; i <= _M; i++) {
+			for (int j = 1; j <= _N; j++) {
+				temp(j, i) = (*this)(i, j);
+			}
+		}
+		return temp;
+	}
+
+	//*** for column and row based operator
+	inline Vector3d IthRow(const int &i)const {
+		if (_N != 3) {
+			MessagePrinter::PrintErrorTxt("A IthRow should be applied for A matrix _Mx3 has 3 cols !");
+			MessagePrinter::AsFem_Exit();
+		}
+		Vector3d temp(0.0);
+		temp(1) = (*this)(i, 1);
+		temp(2) = (*this)(i, 2);
+		temp(3) = (*this)(i, 3);
+		return temp;
+	}
+	inline Vector3d IthCol(const int &i)const {
+		if (_M != 3) {
+			MessagePrinter::PrintErrorTxt("A IthCol should be applied for A matrix 3x_N has 3 rows !");
+			MessagePrinter::AsFem_Exit();
+		}
+		Vector3d temp(0.0);
+		temp(1) = (*this)(1, i);
+		temp(2) = (*this)(2, i);
+		temp(3) = (*this)(3, i);
+		return temp;
+	}
 
 private:
     vector<double> _vals;

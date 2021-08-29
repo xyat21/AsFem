@@ -13,6 +13,7 @@
 //+++          results/material variables/projection quantities 
 //+++          should be stored here by this class
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++ Date   : 2021.08.13  add solution supplymenary variables
 
 #pragma once
 
@@ -141,10 +142,12 @@ public:
     void ReleaseMem();
 
 public:
-    Vec _Unew,_U,_V;
-    Vec _dU;
+	Vec _Unew, _Ud, _U, _Uold, _V, _Utt;// t+1/t/t-1 displacements are necessary. //Ud is the pure deformation displacement vector.
+	Vec _dU, _dV;
+	Vec _reRF;//support born force from system, reRF = -RF.
     Vec _Uold,_Vold;
 
+	Vec _Hist, _HistOld;
     Vec _Proj;// this is used for projection quantities in each element
     Vec _ProjScalarMate,_ProjVectorMate,_ProjRank2Mate,_ProjRank4Mate;// this is used for the material properties
 

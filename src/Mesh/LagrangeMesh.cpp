@@ -16,6 +16,7 @@
 //+++          In order to import mesh from external file, one should
 //+++          call the meshio class
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++ Date   : 2021.04.17  add some abaqus element type.
 
 #include "Mesh/LagrangeMesh.h"
 
@@ -124,7 +125,32 @@ void LagrangeMesh::SetBulkMeshMeshTypeName(string meshname){
         _BulkMeshTypeName="tet10";
         _BulkMeshType=MeshType::TET10;
     }
-    else{
+
+	else if (meshname.find("truss2") != string::npos) {
+		_BulkMeshTypeName = "truss2";
+		_BulkMeshType = MeshType::EDGE2;//<---for pass test.  TRUSS2;
+	}
+	else if (meshname.find("truss3") != string::npos) {
+		_BulkMeshTypeName = "truss3";
+		_BulkMeshType = MeshType::TRUSS3;
+	}
+	else if (meshname.find("beam2") != string::npos) {
+		_BulkMeshTypeName = "beam2";
+		_BulkMeshType = MeshType::EDGE2;//<---for pass test.  BEAM2;
+	}
+	else if (meshname.find("beam3") != string::npos) {
+		_BulkMeshTypeName = "beam3";
+		_BulkMeshType = MeshType::BEAM3;
+	}
+	else if (meshname.find("pipe2") != string::npos) {
+		_BulkMeshTypeName = "pipe2";
+		_BulkMeshType = MeshType::PIPE2;
+	}
+	else if (meshname.find("pipe3") != string::npos) {
+		_BulkMeshTypeName = "pipe3";
+		_BulkMeshType = MeshType::PIPE3;
+	}
+	else{
         MessagePrinter::PrintErrorTxt("unsupported mesh type setting");
         MessagePrinter::AsFem_Exit();
     }

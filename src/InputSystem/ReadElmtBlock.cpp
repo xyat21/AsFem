@@ -12,10 +12,11 @@
 //+++ Purpose: This function can read the [elmts] block and its 
 //+++          subblock from our input file.
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++ Date   : 2021.04.17  add abaqus inp other keylines info.
 
 #include "InputSystem/InputSystem.h"
 
-bool InputSystem::ReadElmtBlock(ifstream &in,string str,const int &lastendlinenum,int &linenum,ElmtSystem &elmtSystem,DofHandler &dofHandler){
+bool InputSystem::ReadElmtBlock(ifstream &in, string str, const int &lastendlinenum, int &linenum, Mesh &mesh, ElmtSystem &elmtSystem, DofHandler &dofHandler) {//Mesh是加的  3个地方同时改
     // elmt block format
     // [elmt]
     //  [solid]
@@ -30,12 +31,18 @@ bool InputSystem::ReadElmtBlock(ifstream &in,string str,const int &lastendlinenu
     bool HasDofs=false;
     bool HasBlock=false;
     bool HasMate=false;
+	bool abaFlag = false;//XY
     ElmtBlock elmtBlock;
     string tempstr,str0,substr;
     vector<double> number;
     vector<string> strlist;
     string msg;
 
+	int _SectionNum;
+	//vector<pair<string, pair<double, double>> > _BeamSectionESetsandMatAd;
+	vector<pair<array<string, 3>, pair<array<double, 2>, array<double, 3>>> > _BeamSectionESetsandMatAd;
+	vector<pair<pair<string, string>, double>> _SolidSectionESetsandMatA;
+	vector<pair<pair<string, string>, double>> _ShellSectionESetsandMatT;
 
     elmtBlock.Init();
     // now the str is [elmts]
@@ -64,11 +71,24 @@ bool InputSystem::ReadElmtBlock(ifstream &in,string str,const int &lastendlinenu
                 MessagePrinter::AsFem_Exit();
                 return false;
             }
-            else{
+			else if (tempstr.size() == 14 && tempstr.find("elmtinabaqus") != string::npos) {
+				abaFlag = true;
+				HasElmtBlock = true; HasDofs = true; HasElmtType = true;
+				elmtBlock._ElmtTypeName = "mechanics";
+				elmtBlock._ElmtType = ElmtType::MECHANICSELMT;
+				//HasElmtType = true;
+				elmtBlock._DofsNameList = dofHandler.GetDofNameList();//暂直接取dofblock中的dofs? 
+				elmtBlock._DofsIDList = dofHandler.GetDofsIndexFromNameVec(elmtBlock._DofsNameList);
+				elmtBlock._nDofs = static_cast<int>(elmtBlock._DofsIDList.size());
+				//HasDofs = true;
+
+			}
+			else{//上面增加从ABAQUS读入内容  对应的是section+set+mat信息
                 elmtBlock._ElmtBlockName=tempstr.substr(tempstr.find_first_of('[')+1,tempstr.find_first_of(']')-1);
                 HasElmtBlock=true;
             }
             while(str.find("[end]")==string::npos&&str.find("[END]")==string::npos){
+				if ((str.find("elmtinabaqus") != string::npos)) { getline(in, str); linenum += 1; break; }//XY
                 getline(in,str);linenum+=1;
                 str0=str;
                 str=StringUtils::StrToLower(str0);
@@ -301,13 +321,71 @@ bool InputSystem::ReadElmtBlock(ifstream &in,string str,const int &lastendlinenu
                     return false;
                 }
             }
-            if(HasElmtBlock&&HasDofs&&HasElmtType){
-                if(!HasMate){
-                    elmtBlock._MateBlockName="";
-                }
-                if(!HasBlock) elmtBlock._DomainName="alldomain";
-                elmtSystem.AddBulkElmtBlock2List(elmtBlock);
-            }
+			if (HasElmtBlock&&HasDofs&&HasElmtType) {//完成一个Elmt数据读取后，添加到elmtSystem中
+				if (abaFlag) {
+					_SectionNum = mesh.GetBeamSectionNum();
+					if (_SectionNum != 0) {//vector<pair<string, pair<double, double>> > GetBeamSectionESetsandMatAdFromInp(string filename)
+						_BeamSectionESetsandMatAd = mesh.GetBeamSectionESetsandMatAdListPtr();
+						int isec = 0;
+						for (auto it : _BeamSectionESetsandMatAd) {//
+							isec++;
+							elmtBlock._ElmtBlockName = "Beamsection" + to_string(isec);
+							elmtBlock._MateBlockName = it.first[1];//Elset,mat,sectiontype   截面类型没用，但是实际后面计算截面积需要。。
+							HasMate = true;
+							elmtBlock._DomainName = it.first[0];
+							HasBlock = true;
+							elmtSystem.AddBulkElmtBlock2List(elmtBlock);
+						}
+
+					}
+					else {
+						_SectionNum = mesh.GetSolidSectionNum();
+						if (_SectionNum != 0) {//vector<pair<pair<string, string>, double>> GetSolidSectionESetsandMatAFromInp
+							_SolidSectionESetsandMatA = mesh.GetSolidSectionESetsandMatAListPtr();
+							int isec = 0;
+							for (auto it : _SolidSectionESetsandMatA) {//
+								isec++;
+								elmtBlock._ElmtBlockName = "Solidsection" + to_string(isec);
+								elmtBlock._MateBlockName = it.first.second;//Elset,mat,thickness   厚度没用，但实际后面计算需要厚度。。
+								HasMate = true;
+								elmtBlock._DomainName = it.first.first;
+								HasBlock = true;
+								elmtSystem.AddBulkElmtBlock2List(elmtBlock);
+							}
+
+						}
+						else {//vector<pair<pair<string, string>, double>> GetShellSectionESetsandMatTFromInp
+							_SectionNum = mesh.GetShellSectionNum();
+							if (_SectionNum != 0) {//vector<pair<pair<string, string>, double>> GetSolidSectionESetsandMatAFromInp
+								_ShellSectionESetsandMatT = mesh.GetShellSectionESetsandMatTListPtr();
+								int isec = 0;
+								for (auto it : _ShellSectionESetsandMatT) {//
+									isec++;
+									elmtBlock._ElmtBlockName = "Shellsection" + to_string(isec);
+									elmtBlock._MateBlockName = it.first.second;//Elset,mat,thickness   厚度没用，但实际后面计算需要厚度。。
+									HasMate = true;
+									elmtBlock._DomainName = it.first.first;
+									HasBlock = true;
+									elmtSystem.AddBulkElmtBlock2List(elmtBlock);
+								}
+							}
+							else {//_SectionNum  = 0
+								msg = "no elmt Section found in [secINabaqus]               !!!";
+								MessagePrinter::PrintErrorTxt(msg);
+								//MessagePrinter::AsFem_Exit();
+							}
+						}
+					}
+
+				}
+				else {
+					if (!HasMate) {
+						elmtBlock._MateBlockName = "";
+					}
+					if (!HasBlock) elmtBlock._DomainName = "alldomain";
+					elmtSystem.AddBulkElmtBlock2List(elmtBlock);
+				}
+			}
             else{
                 msg="information in [elmts] sub block is not complete, information is missing in ["+elmtBlock._ElmtBlockName+"]";
                 MessagePrinter::PrintErrorTxt(msg,false);

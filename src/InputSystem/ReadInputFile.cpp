@@ -11,6 +11,7 @@
 //+++ Date   : 2020.06.30
 //+++ Purpose: Function for reading the whole input file
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++ Date   : 2021.04.19  add added amp and load system
 
 #include "InputSystem/InputSystem.h"
 
@@ -19,7 +20,7 @@ bool InputSystem::ReadInputFile(Mesh &mesh,
                                 ElmtSystem &elmtSystem,
                                 MateSystem &mateSystem,
                                 BCSystem &bcSystem,
-                                ICSystem &icSystem,
+                                ICSystem &icSystem, AmpSystem &ampSystem, LoadSystem &loadSystem,
                                 FE &fe,
                                 SolutionSystem &solutionSystem,
                                 OutputSystem &outputSystem,
@@ -108,7 +109,7 @@ bool InputSystem::ReadInputFile(Mesh &mesh,
                 MessagePrinter::AsFem_Exit();
                 return false;
             }
-            if(ReadDofsBlock(in,str,linenum,dofHandler)){
+			if (ReadDofsBlock(in, str, linenum, mesh, dofHandler)) {//加了mesh
                 HasDofsBlock=true;
             }
             else{
@@ -124,7 +125,7 @@ bool InputSystem::ReadInputFile(Mesh &mesh,
             }
             int lastendlinenum;
             if(StringUtils::IsBracketMatch(in,linenum,lastendlinenum)){
-                if(ReadElmtBlock(in,str,lastendlinenum,linenum,elmtSystem,dofHandler)){
+				if (ReadElmtBlock(in, str, lastendlinenum, linenum, mesh, elmtSystem, dofHandler)) {//加了mesh
                     HasElmtBlock=true;
                 }
                 else{
@@ -142,7 +143,7 @@ bool InputSystem::ReadInputFile(Mesh &mesh,
         else if(str.find("[mates]")!=string::npos){
             int lastendlinenum;
             if(StringUtils::IsBracketMatch(in,linenum,lastendlinenum)){
-                if(ReadMateBlock(in,str,lastendlinenum,linenum,mateSystem)){
+				if (ReadMateBlock(in, str, lastendlinenum, linenum, mesh, mateSystem)) {//加了mesh
                     HasMateBlock=true;
                 }
                 else{
@@ -165,7 +166,7 @@ bool InputSystem::ReadInputFile(Mesh &mesh,
             }
             int lastendlinenum;
             if(StringUtils::IsBracketMatch(in,linenum,lastendlinenum)){
-                if(ReadBCBlock(in,str,lastendlinenum,linenum,bcSystem,dofHandler)){
+				if (ReadBCBlock(in, str, lastendlinenum, linenum, mesh, bcSystem, dofHandler)) {//加了mesh
                     HasBCBlock=true;
                 }
                 else{
@@ -393,7 +394,8 @@ bool InputSystem::ReadInputFile(Mesh &mesh,
         fe.CreateQPoints(mesh);
     }
     else{
-        fe.SetDim(mesh.GetDim());
+		//if(mesh.GetBulkMeshBulkElmtType()!=(MeshType::HEX8)){ fe.SetDim(mesh.GetDim()-1); }//目前我用的1D梁是二维坐标，2D板单元是三维坐标。。。所以维度基本被升了一级。
+		fe.SetDim(mesh.GetDim());
         fe.CreateQPoints(mesh);
     }
 

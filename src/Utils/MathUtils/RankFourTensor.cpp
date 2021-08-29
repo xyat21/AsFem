@@ -60,7 +60,7 @@ RankFourTensor::RankFourTensor(const InitMethod &method)
 //****************************************
 void RankFourTensor::SetFromLameandG(const double &Lame,const double &G){
     // taken from: https://en.wikipedia.org/wiki/Linear_elasticity
-    // C_ijkl = Lame*de_ij*de_kl + G*(de_ik*de_jl + de_il*de_jk)
+    // C_ijkl = Lame*de_ij*de_kl + G*(de_ik*de_jl + de_il*de_jk)		//Kronecker delta ==The function is 1 if the variables are equal, and 0 otherwise.
     SetToZeros();
     for(int i=1;i<=_N;++i){
         for(int j=1;j<=_N;++j){
@@ -68,7 +68,7 @@ void RankFourTensor::SetFromLameandG(const double &Lame,const double &G){
                 for(int l=1;l<=_N;++l){
                     (*this)(i,j,k,l)=Lame*(i==j)*(k==l)
                                     +G*(i==k)*(j==l)
-                                    +G*(i==l)*(j==k);
+                                    +G*(i==l)*(j==k);//in solid, G用mu表示,见Lamé parameters表述
                 }
             }
         }

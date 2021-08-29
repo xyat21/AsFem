@@ -14,13 +14,14 @@
 //+++            quad4, quad8 and quad9 mesh
 //+++            tri3 and tri6 mesh
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++ Date   : 2021.08.23  add some shp Ni for some future-may-need elements
 
 #include "FE/LagrangeShapeFun.h"
 
 void LagrangeShapeFun::Compute2DLagrangeShapeFun(const double &xi,const double &eta,const Nodes &nodes,bool flag){
     _DetJac=0.0;
     switch (GetMeshType()){
-        case MeshType::QUAD4:{
+        case MeshType::QUAD4:{//N1-N4 start from left bottom corner，count as per anticlockwise, right-hand rule as normal direction
             (*this)(1,0)=(1.0-xi)*(1.0-eta)/4.0;
             (*this)(2,0)=(1.0+xi)*(1.0-eta)/4.0;
             (*this)(3,0)=(1.0+xi)*(1.0+eta)/4.0;
@@ -158,6 +159,105 @@ void LagrangeShapeFun::Compute2DLagrangeShapeFun(const double &xi,const double &
             
             break;
         }
+
+		case MeshType::S3: {//	||Active degrees of freedom 1, 2, 3, 4, 5, 6
+
+			break;
+		}
+		case MeshType::S3R: {
+
+			break;
+		}
+		case MeshType::S4: {
+
+			break;
+		}
+		case MeshType::S4R: {
+
+			break;
+		}
+		case MeshType::M3D3: {//VFIFE	||Active degrees of freedom 1, 2, 3
+			(*this)(1, 0) = 1.0 - xi - eta;
+			(*this)(1, 1) = -1.0;
+			(*this)(1, 2) = -1.0;
+
+			(*this)(2, 0) = xi;
+			(*this)(2, 1) = 1.0;
+			(*this)(2, 2) = 0.0;
+
+			(*this)(3, 0) = eta;
+			(*this)(3, 1) = 0.0;
+			(*this)(3, 2) = 1.0;
+			break;
+		}
+		case MeshType::M3D4: {//	||Active degrees of freedom 1, 2, 3
+			(*this)(1, 0) = (1.0 - xi)*(1.0 - eta) / 4.0;
+			(*this)(2, 0) = (1.0 + xi)*(1.0 - eta) / 4.0;
+			(*this)(3, 0) = (1.0 + xi)*(1.0 + eta) / 4.0;
+			(*this)(4, 0) = (1.0 - xi)*(1.0 + eta) / 4.0;
+
+			(*this)(1, 1) = (eta - 1.0) / 4.0;
+			(*this)(1, 2) = (xi - 1.0) / 4.0;
+
+			(*this)(2, 1) = (1.0 - eta) / 4.0;
+			(*this)(2, 2) = -(1.0 + xi) / 4.0;
+
+			(*this)(3, 1) = (1.0 + eta) / 4.0;
+			(*this)(3, 2) = (1.0 + xi) / 4.0;
+
+			(*this)(4, 1) = -(1.0 + eta) / 4.0;
+			(*this)(4, 2) = (1.0 - xi) / 4.0;
+
+			break;
+		}
+		case MeshType::SC6R: {//	||Active degrees of freedom 1, 2, 3
+
+			break;
+		}
+		case MeshType::SFM3D3: {//	||Active degrees of freedom 1, 2, 3
+
+			break;
+		}
+		case MeshType::SFM3D4: {//	||Active degrees of freedom 1, 2, 3
+
+			break;
+		}
+		case MeshType::SFM3D4R: {//	||Active degrees of freedom 1, 2, 3
+
+			break;
+		}
+		case MeshType::CPE3: {//	||Active degrees of freedom 1, 2
+
+			break;
+		}
+		case MeshType::CPE4: {
+
+			break;
+		}
+		case MeshType::CPE4R: {
+
+			break;
+		}
+		case MeshType::CPE6M: {//	||Active degrees of freedom 1, 2, 3
+
+			break;
+		}
+		case MeshType::CPS3: {//	||Active degrees of freedom 1, 2, 3
+
+			break;
+		}
+		case MeshType::CPS4: {
+
+			break;
+		}
+		case MeshType::CPS4R: {
+
+			break;
+		}
+		case MeshType::CPS6M: {//	||Active degrees of freedom 1, 2, 3
+
+			break;
+		}
         default:
             break;
     }
@@ -187,12 +287,12 @@ void LagrangeShapeFun::Compute2DLagrangeShapeFun(const double &xi,const double &
     
 
     _Jac[0][0]= _dxdxi;_Jac[0][1]= _dydxi;
-    _Jac[1][0]=_dxdeta;_Jac[1][1]=_dydeta;
+    _Jac[1][0]=_dxdeta;_Jac[1][1]=_dydeta;//雅可比矩阵
 
     _XJac[0][0]= _Jac[1][1]/_DetJac;
     _XJac[0][1]=-_Jac[0][1]/_DetJac;
     _XJac[1][0]=-_Jac[1][0]/_DetJac;
-    _XJac[1][1]= _Jac[0][0]/_DetJac;
+    _XJac[1][1]= _Jac[0][0]/_DetJac;//	J余子式/|J|  -> 求逆 [J]^-1
 
     double temp;
     for(int i=1;i<=GetShapeFunNums();i++){
@@ -201,9 +301,10 @@ void LagrangeShapeFun::Compute2DLagrangeShapeFun(const double &xi,const double &
             (*this)(i,2)=(*this)(i,1)*_XJac[1][0]+(*this)(i,2)*_XJac[1][1];
             (*this)(i,1)=temp;
         }
-       _shape_value[i-1]=(*this)(i,0);
+       _shape_value[i-1]=(*this)(i,0);//Ni
        _shape_grad[i-1].setZero();
-       _shape_grad[i-1](1)=(*this)(i,1);
-       _shape_grad[i-1](2)=(*this)(i,2);
+       _shape_grad[i-1](1)=(*this)(i,1);// sum dNi/dx
+       _shape_grad[i-1](2)=(*this)(i,2);// sum dNi/dy
+	   //3D element 还应该有dNi/dz
     }
 }

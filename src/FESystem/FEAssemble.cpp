@@ -12,6 +12,7 @@
 //+++ Purpose: Implement the different assemble functions for different
 //+++          cases, i.e., residual assemble and jacobian assemble
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++ Date   : 2021.08.25  add secA for shell sumR
 
 #include "FESystem/FESystem.h"
 
@@ -19,15 +20,19 @@ void FESystem::AssembleSubResidualToLocalResidual(const int &ndofspernode,const 
                                             const VectorXd &subR,VectorXd &localR){
     // TODO: we need a better assemble algorithm for complex coupling case !!!
     for(int i=1;i<=dofs;i++){
-        localR((iInd-1)*ndofspernode+i)+=subR(i);
+        localR((iInd-1)*ndofspernode+i)+=subR(i);//单元iInd节点的i自由度的值 i重复[因为不同高斯点在同一节点作用/单元属于多sub block?]时累加  
+												 //按总自由度编号存储转换为节点对应自由度编号存储 本质上还是1-dofs
     }
 }
 //***********************************
-void FESystem::AccumulateLocalResidual(const int &dofs,const vector<double> &dofsactiveflag,const double &JxW,
-                                const VectorXd &localR,vector<double> &sumR){
+//void FESystem::AccumulateLocalResidual(const int &dofs,const vector<double> &dofsactiveflag,const double &JxW,
+//                                const VectorXd &localR,vector<double> &sumR){
+void FESystem::AccumulateLocalResidual(const int &dofs, const vector<double> &dofsactiveflag, const double &JxW, const double &secA,
+	const VectorXd &localR,vector<double> &sumR){
     for(int i=1;i<=dofs;i++){
-        sumR[i-1]+=localR(i)*JxW*dofsactiveflag[i-1];
-    }
+        //sumR[i-1]+=localR(i)*JxW*dofsactiveflag[i-1];//没计shell 厚度
+		sumR[i-1]+= localR(i)*secA*JxW;//只考虑内力，因此不管约束自由度导致合力为0，在其他地方单独计算支反力，然后合力使其为0.
+	}
 }
 //*****************************************
 void FESystem::AssembleLocalResidualToGlobalResidual(const int &ndofs,const vector<int> &dofindex,

@@ -11,6 +11,7 @@
 //+++ Date   : 2020.07.12
 //+++ Purpose: generate the GaussâLegendre points for the integration
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++ Date   : 2021.08.24  add some reference links
 
 #include "FE/QPointGaussLegendre.h"
 
@@ -48,9 +49,10 @@ void QPointGaussLegendre::Create1DGaussPoint()
     }
     case 2:
     case 3:
-    {
-        _nQpPoints = 2;
-        _QpCoords.resize(2 * (1 + 1), 0.0);
+	{//https://en.wikipedia.org/wiki/Gaussian_quadrature		// online calculator: https://keisan.casio.com/exec/system/1329114617
+		_nQpPoints = 2;						//refernce: https://pomax.github.io/bezierinfo/legendre-gauss.html		//https://mathworld.wolfram.com/Legendre-GaussQuadrature.html
+													//	https://nm.mathforcollege.com/mws/gen/07int/mws_gen_int_txt_gaussquadrature.pdf   // https://nm.mathforcollege.com/chapter-07-05-gauss-quadrature/
+		_QpCoords.resize(2 * (1 + 1), 0.0);
         (*this)(1, 0) = 1.0;
         (*this)(1, 1) = -sqrt(1.0 / 3.0);
         (*this)(2, 0) = 1.0;

@@ -12,11 +12,12 @@
 //+++ Purpose: This function can read the [mates] block and its 
 //+++          subblock from our input file.
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++ Date   : 2021.04.17  add abaqus inp other keylines info.
 
 #include "InputSystem/InputSystem.h"
 
-bool InputSystem::ReadMateBlock(ifstream &in,string str,const int &lastendlinenum,int &linenum,MateSystem &mateSystem){
-    // each bc block should looks like:
+bool InputSystem::ReadMateBlock(ifstream &in, string str, const int &lastendlinenum, int &linenum, Mesh &mesh, MateSystem &mateSystem) {//Mesh是加的  3个地方同时改
+	// each bc block should looks like:
     //   [mate1]
     //     type=elastic
     //     params=1.0 2.0
@@ -28,6 +29,8 @@ bool InputSystem::ReadMateBlock(ifstream &in,string str,const int &lastendlinenu
     string tempstr,str0;
     vector<double> number;
     string msg;
+	vector<LagrangeMesh::material_info> _Mate;//LagrangeMesh    AbaqusIO
+	bool abaFlag = false;
 
     bool HasElmt=false;
     bool HasValue=false;
@@ -55,11 +58,20 @@ bool InputSystem::ReadMateBlock(ifstream &in,string str,const int &lastendlinenu
                 MessagePrinter::AsFem_Exit();
                 return false;
             }
-            else{
+			else if (tempstr.size() == 14 && tempstr.find("mateinabaqus") != string::npos) {//补充从ABAQUS读取材料
+				abaFlag = true;
+				HasBlock = true; HasElmt = true;
+				_Mate = mesh.GetMateListPtr();//vector<AbaqusIO::material_info> AbaqusIO::GetMateFromInp ===》LagrangeMesh
+				mateBlock._MateTypeName = "linearelastic";
+				mateBlock._MateType = MateType::LINEARELASTICMATE;
+
+			}
+			else{
                 mateBlock._MateBlockName=tempstr.substr(1,tempstr.size()-1-1);
                 HasBlock=true;
             }
             while(str.find("[end]")==string::npos&&str.find("[END]")==string::npos){
+				if ((str.find("mateinabaqus") != string::npos)) { getline(in, str); linenum += 1; break; }//XY
                 getline(in,str);linenum+=1;
                 str=StringUtils::StrToLower(str);
                 str0=str;
@@ -273,12 +285,28 @@ bool InputSystem::ReadMateBlock(ifstream &in,string str,const int &lastendlinenu
             }
             if(HasBlock&&HasElmt){
                 HasBlock=true;
-                if(!HasValue) {
-                    mateBlock._Parameters.clear();
-                    mateBlock._Parameters.push_back(1.0);
-                }
-                mateSystem.AddBulkMateBlock2List(mateBlock);
-                HasMateBlock=true;
+				if (abaFlag) {
+					//int imat = 0;
+					vector<double> params;
+					for (auto it : _Mate) {//mat的密度 alpha beta阻尼都没用
+						//imat++;
+						mateBlock._MateBlockName = it.matname;
+						params.clear();
+						params.push_back(it.Youngs_modulus);
+						params.push_back(it.poisson);
+						mateBlock._Parameters.clear();
+						mateBlock._Parameters = params;
+						mateSystem.AddBulkMateBlock2List(mateBlock);
+					}
+				}
+				else {
+					if (!HasValue) {
+						mateBlock._Parameters.clear();
+						mateBlock._Parameters.push_back(1.0);
+					}
+					mateSystem.AddBulkMateBlock2List(mateBlock);
+				}
+				HasMateBlock=true;
             }
             else{
                 msg="information is not complete in [mates] sub block, some information is missing in ["+mateBlock._MateBlockName+"]";

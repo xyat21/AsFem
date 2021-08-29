@@ -38,7 +38,7 @@ void NonlinearSolver::SetOptionsFromNonlinearSolverBlock(NonlinearSolverBlock &n
     _RRelTol=nonlinearsolverblock._RRelTol;
     _STol=nonlinearsolverblock._STol;
 
-    _SolverType=nonlinearsolverblock._SolverType;
+    //_SolverType=nonlinearsolverblock._SolverType;
     _SolverTypeName=nonlinearsolverblock._SolverTypeName;
     _LinearSolverName=nonlinearsolverblock._LinearSolverName;
     _PCTypeName=nonlinearsolverblock._PCTypeName;

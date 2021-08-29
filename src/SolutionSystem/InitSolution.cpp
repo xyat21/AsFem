@@ -29,6 +29,10 @@ void SolutionSystem::InitSolution(const int &ndofs,const int &nelmts,const int &
     VecSetSizes(_Uold,PETSC_DECIDE,ndofs);
     VecSetUp(_Uold);// must call this, otherwise PETSc will have memory segmentation error!!!
 
+	VecCreate(PETSC_COMM_WORLD, &_Ud);//XY
+	VecSetSizes(_Ud, PETSC_DECIDE, ndofs);
+	VecSetUp(_Ud);
+
     VecCreate(PETSC_COMM_WORLD,&_Unew);
     VecSetSizes(_Unew,PETSC_DECIDE,ndofs);
     VecSetUp(_Unew);
@@ -40,7 +44,8 @@ void SolutionSystem::InitSolution(const int &ndofs,const int &nelmts,const int &
 
     VecSet(_Unew,0.0);
     VecSet(_U,0.0);
-    VecSet(_Uold,0.0);
+	VecSet(_Ud, 0.0);
+	VecSet(_Uold,0.0);
     VecSet(_dU,0.0);
     //*******************************
     VecCreate(PETSC_COMM_WORLD,&_V);
@@ -53,6 +58,23 @@ void SolutionSystem::InitSolution(const int &ndofs,const int &nelmts,const int &
 
     VecSet(_V,0.0);
     VecSet(_Vold,0.0);
+
+	VecCreate(PETSC_COMM_WORLD, &_dV);
+	VecSetSizes(_dV, PETSC_DECIDE, ndofs);
+	VecSetUp(_dV);
+	VecSet(_dV, 0.0);
+
+	VecCreate(PETSC_COMM_WORLD, &_reRF);
+	VecSetSizes(_reRF, PETSC_DECIDE, ndofs);
+	VecSetUp(_reRF);
+	VecSet(_reRF, 0.0);
+
+	//*******************************
+	VecCreate(PETSC_COMM_WORLD, &_Utt);
+	VecSetSizes(_Utt, PETSC_DECIDE, ndofs);
+	VecSetUp(_Utt);
+	VecSet(_Utt, 0.0);
+
     //*****************************************************
     //*** For projection array and history variable 
     //*****************************************************

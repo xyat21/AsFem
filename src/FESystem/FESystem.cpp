@@ -31,4 +31,5 @@ FESystem::FESystem(){
     _MaxKMatrixValue=-1.0e3;_KMatrixFactor=0.1;
 
     _localK.Clean();_localR.Clean();
+	_localM.Clean(); _localC.Clean();
 }

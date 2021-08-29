@@ -30,7 +30,7 @@ void QPointGaussLobatto::CreateQpoints(MeshType meshtype){
     }
 }
 //****************************************************************
-//*** For 1D Gauss-Legendre point generation
+//*** For 1D Gauss-Lobatto point generation
 //****************************************************************
 void QPointGaussLobatto::Create1DGaussPoint(){
     // For Gauss-Lobatto type integration points generatioin
@@ -124,7 +124,7 @@ void QPointGaussLobatto::Create1DGaussPoint(){
     }
 }
 //****************************************************************
-//*** For 2D Gauss-Legendre point generation
+//*** For 2D Gauss-Lobatto point generation
 //****************************************************************
 void QPointGaussLobatto::Create2DGaussPoint(MeshType meshtype){
     switch (meshtype){
@@ -155,7 +155,7 @@ void QPointGaussLobatto::Create2DGaussPoint(MeshType meshtype){
     }
 }
 //****************************************************************
-//*** For 3D Gauss-Legendre point generation
+//*** For 3D Gauss-Lobatto point generation
 //****************************************************************
 void QPointGaussLobatto::Create3DGaussPoint(MeshType meshtype){
     switch (meshtype){

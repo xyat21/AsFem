@@ -37,7 +37,7 @@ bool InputSystem::ReadICBlock(ifstream &in,string str,const int &lastendlinenum,
     bool HasDof=false;
     bool HasDomain=false;
 
-    // now str="[bcs]"
+    // now str="[ics]"
     while (linenum<=lastendlinenum){
         getline(in,str);linenum+=1;
         str0=str;

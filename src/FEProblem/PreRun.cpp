@@ -11,6 +11,7 @@
 //+++ Date   : 2020.12.27
 //+++ Purpose: read the input file before we run FEM analysis
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++ Date   : 2021.07.13  add added amp and load systems, move the line of jobtype assign value.
 
 #include "FEProblem/FEProblem.h"
 
@@ -18,8 +19,8 @@ void FEProblem::ReadInputFile(){
     MessagePrinter::PrintStars();
     MessagePrinter::PrintNormalTxt("Start to read the input file ...");
     _inputSystem.ReadInputFile(_mesh,_dofHandler,
-    _elmtSystem,_mateSystem,_bcSystem,_icSystem,_fe,
-    _solutionSystem,_outputSystem,
+    _elmtSystem,_mateSystem,_bcSystem,_icSystem, _ampSystem, _loadSystem, 
+	_fe, _solutionSystem,_outputSystem,
     _postprocessSystem,
     _nonlinearSolver,_timestepping,
     _feJobBlock);
@@ -34,6 +35,11 @@ void FEProblem::InitAllComponents(){
     char buff[70];
     string str;
 
+	MessagePrinter::PrintStars();
+	snprintf(buff, 70, "++++++ %8d CPUs are found in current PC       ++++++!", _size);//temp line test for used CPU processor numbers.
+	str = buff;
+	MessagePrinter::PrintNormalTxt(str);
+	MessagePrinter::PrintStars();
 
     //***************************************************************
     //*** for boundary condition system initializing
@@ -53,7 +59,7 @@ void FEProblem::InitAllComponents(){
     if(_rank==0){
         _TimerStart=chrono::high_resolution_clock::now();
     }
-    _dofHandler.CreateBulkDofsMap(_mesh,_bcSystem,_elmtSystem);
+    _dofHandler.CreateBulkDofsMap(_mesh,_bcSystem,_elmtSystem);//_nElmts单元->_nNodes节点->_nDofs自由度->存储总_nActiveDofs，BC类型flag赋值/最大非零自由度行大小
     if(_rank==0){
         _TimerEnd=chrono::high_resolution_clock::now();
         _Duration=Duration(_TimerStart,_TimerEnd);
@@ -72,7 +78,7 @@ void FEProblem::InitAllComponents(){
     if(_rank==0){
         _TimerStart=chrono::high_resolution_clock::now();
     }
-    _fe.InitFE(_mesh);
+    _fe.InitFE(_mesh);// qpoint and shape function
     if(_rank==0){
         _TimerEnd=chrono::high_resolution_clock::now();
         _Duration=Duration(_TimerStart,_TimerEnd);
@@ -145,6 +151,7 @@ void FEProblem::InitAllComponents(){
     //***************************************************************
     //*** for timestepping solver SNES
     //***************************************************************
+	_feJobType = _feJobBlock._jobType;	//	XY move========
     if(_feJobType==FEJobType::TRANSIENT){
         snprintf(buff,70,"Start to initialize time stepping system ...");
         str=buff;
@@ -215,7 +222,7 @@ void FEProblem::InitAllComponents(){
     _nonlinearSolver.PrintInfo();
 
 
-    _feJobType=_feJobBlock._jobType;
+    //_feJobType=_feJobBlock._jobType;
     _feCtrlInfo.IsDebug=_feJobBlock._IsDebug;
     _feCtrlInfo.IsDepDebug=_feJobBlock._IsDepDebug;
     _feCtrlInfo.IsProjection=_solutionSystem.IsProjection();

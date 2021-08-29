@@ -94,6 +94,12 @@ void SolutionSystem::ReleaseMem(){
     VecDestroy(&_U);
     VecDestroy(&_dU);
     VecDestroy(&_V);
+	VecDestroy(&_Ud);
+	VecDestroy(&_Uold);
+
+	VecDestroy(&_dV);
+	VecDestroy(&_Utt);
+	VecDestroy(&_reRF);
 
     VecDestroy(&_Uold);
     VecDestroy(&_Vold);

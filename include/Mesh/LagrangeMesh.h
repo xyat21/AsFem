@@ -16,12 +16,14 @@
 //+++          In order to import mesh from external file, one should
 //+++          call the meshio class
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++ Date   : 2021.07.21  add funs to read more inp keylines info.
 
 #pragma once
 
 #include<iostream>
 #include<iomanip>
 #include<vector>
+#include <array>
 #include<cstdio>
 #include<cmath>
 #include<set>
@@ -50,7 +52,8 @@ public:
     void SetBulkMeshDim(const int &ndim) {_nMaxDim=ndim;_nMinDim=ndim-1;}
     void SetBulkMeshMaxDim(const int &ndim) {_nMaxDim=ndim;}
     void SetBulkMeshMinDim(const int &ndim) {_nMinDim=ndim;}
-    void SetBulkMeshMeshOrder(const int &p){_nOrder=p;}
+	void SetSpaceDim(const int &nspacedim) { _nSpaceDim = nspacedim; }//
+	void SetBulkMeshMeshOrder(const int &p){_nOrder=p;}
     //*** for element numbers 
     void SetBulkMeshNx(const int &nx){_Nx=nx;}
     void SetBulkMeshNy(const int &ny){_Ny=ny;}
@@ -77,16 +80,26 @@ public:
     void SetBulkMeshLineMeshType(const MeshType &type){_LineMeshType=type;}
     //*** for elmt volume settings
     void SetBulkMeshIthElmtVolume(const int &i,const double &volume){_ElmtVolume[i-1]=volume;}
-    void SetBulkMeshIthBulkElmtVolume(const int &i,const double &volume){_ElmtVolume[i+_nElmts-_nBulkElmts-1]=volume;}
-    //*** for physical group settings
+	void SetBulkMeshIthBulkElmtVolume(const int &i,const double &volume){_ElmtVolume[i+_nElmts-_nBulkElmts-1]=volume;}//如果有subelmt,编号先前者后bulkelmt.
+	//void SetBulkMeshIthBulkElmtMass(const int &i, const double &mass) {_ElmtMass[i+_nElmts- _nBulkElmts -1]=mass;}//不如直接用节点等效质量组成节点质量矩阵
+	void SetModelIthNodeeqVolume(const int &i, const double &volume) { _NodeeqVolume[i - 1] = volume; }
+	void SetTotalVolume(const double &volume) { _TotalVolume = volume; }
+
+	//*** for physical group settings
     void SetBulkMeshPhysicalGroupNums(const int &n){_nPhysicalGroups=n;}
     void SetBulkMeshNodeSetPhysicalGroupNums(const int &n){_nNodeSetPhysicalGroups=n;}
-    //************************************************************
+
+	void SetBeamSectionNum(const int &n) { _BeamSectionNum = n; }
+	void SetSolidSectionNum(const int &n) { _SolidSectionNum = n; }
+	void SetShellSectionNum(const int &n) { _ShellSectionNum = n; }
+	//************************************************************
     //*** for advanced getting functions (allow value modify externally!)
     //************************************************************
     vector<double>&      GetBulkMeshNodeCoordsPtr(){return _NodeCoords;}
     vector<vector<int>>& GetBulkMeshElmtConnPtr(){return _ElmtConn;}
-    vector<double>&      GetBulkMeshElmtVolumePtr(){return _ElmtVolume;}
+    //vector<double>&      GetBulkMeshElmtVolumePtr(){return _ElmtVolume;}
+	vector<double>&      GetBulkMeshElmtVolumeListPtr() { return _ElmtVolume; }
+	vector<double>&      GetBulkMeshNodeeqVolumeListPtr() { return _NodeeqVolume; }
 
     vector<int>&         GetBulkMeshElmtVTKCellTypeListPtr(){return _ElmtVTKCellTypeList;}
     vector<int>&         GetBulkMeshElmtPhyIDListPtr(){return _ElmtPhyIDList;}
@@ -108,6 +121,39 @@ public:
     vector<pair<string,int>>&         GetBulkMeshNodeSetPhysicalName2IDListPtr(){return _NodeSetPhysicalGroupName2IDList;}
     vector<pair<string,vector<int>>>& GetBulkMeshNodeSetPhysicalName2NodeIDsListPtr(){return _NodeSetPhysicalName2NodeIDsList;}
 
+	// =====XY======
+	vector<std::pair<pair<string, string>, vector<double>> >& GetCLoadListPtr() { return _CLoadList; };
+	vector<std::pair<vector<string>, double> >& GetDsLoadListPtr() { return _DsLoadList; };
+	vector<std::pair<vector<string>, vector<double>> >& GetDLoadsListPtr() { return _DLoadsList; };
+	vector<std::pair<string, std::vector<string>> >& GetLoadInfoListPtr() { return _LoadStrList; };
+	struct material_info {
+		string matname;
+		double density;
+		double Youngs_modulus;
+		double poisson;
+		double damp_alpha = 0.0;
+		double damp_beta = 0.0;
+	};//Mate;
+	struct step_info {
+		//vector<int> static_run;
+		//vector<std::pair<pair<string, string>, vector<std::pair<double, double> >> > _AmpsTimeList;
+		vector<std::pair<std::vector<std::string>, std::vector<double>> > _AmpsTimeList;
+		vector<std::pair<string, vector<int>> > _BoundaryDoFList;
+		//vector<std::pair<string, vector<double>> > CLoad;
+		//vector<int> output;
+	}Step;		//History
+	vector<material_info>& GetMateListPtr() { return _MateList; };
+	//vector<std::pair<pair<string, string>, vector<std::pair<double, double> >> >& GetAmpsTimeListPtr() { return Step._AmpsTimeList; };
+	vector<std::pair<std::vector<std::string>, std::vector<double>> >& GetAmpsTimeListPtr() { return Step._AmpsTimeList; };
+	vector<std::pair<string, vector<int>> >& GetBoundaryDoFListPtr() { return Step._BoundaryDoFList; };
+	//vector<pair<string, pair<double, double>> >& GetBeamSectionESetsandMatAdListPtr() { return _BeamSectionESetsandMatAdList; };
+	vector<pair<array<string, 3>, pair<array<double, 2>, array<double, 3>>> >& GetBeamSectionESetsandMatAdListPtr() { return _BeamSectionESetsandMatAdList; };
+	vector<pair<pair<string, string>, double>>& GetSolidSectionESetsandMatAListPtr() { return _SolidSectionESetsandMatAList; };
+	vector<pair<pair<string, string>, double>>& GetShellSectionESetsandMatTListPtr() { return _ShellSectionESetsandMatTList; };
+
+	inline int GetBeamSectionNum()const { return _BeamSectionNum; }
+	inline int GetSolidSectionNum()const { return _SolidSectionNum; }
+	inline int GetShellSectionNum()const { return _ShellSectionNum; }
 
     //************************************************************
     //*** for the basic getting functions
@@ -115,7 +161,8 @@ public:
     //*** for dimention of the bulk mesh
     inline int GetBulkMeshDim()const{return _nMaxDim;}
     inline int GetBulkMeshMinDim()const{return _nMinDim;}
-    //*** for nodes num of the bulk mesh
+	inline int GetSpaceDim()const { return _nSpaceDim; }
+	//*** for nodes num of the bulk mesh
     inline int GetBulkMeshNodesNum()const{return _nNodes;}
     inline int GetBulkMeshNodesNumPerBulkElmt()const{return _nNodesPerBulkElmt;}
     inline int GetBulkMeshNodesNumPerSurfaceElmt()const{return _nNodesPerSurfaceElmt;}
@@ -128,7 +175,10 @@ public:
     inline int GetBulkMeshBulkElmtsNum()const{return _nBulkElmts;}
     inline int GetBulkMeshSurfaceElmtsNum()const{return _nSurfaceElmts;}
     inline int GetBulkMeshLineElmtsNum()const{return _nLineElmts;}
-    //*** for mesh order
+
+	//*** for model total volume
+	inline double GetTotalVolume()const { return _TotalVolume; }
+	//*** for mesh order
     inline int GetBulkMeshOrder()const{return _nOrder;}
     //*** for mesh type
     inline MeshType GetBulkMeshBulkElmtType()const{return _BulkMeshType;}
@@ -180,19 +230,19 @@ public:
     inline int  GetBulkMeshIthElmtVTKCellType(const int &i)const{return _ElmtVTKCellTypeList[i-1];}
     inline int  GetBulkMeshIthBulkElmtVTKCellType(const int &i)const{return _ElmtVTKCellTypeList[i+_nElmts-_nBulkElmts-1];}
     
-    inline int  GetBulkMeshIthElmtNodesNum(const int &i)const{return _ElmtConn[i-1][0];}
+    inline int  GetBulkMeshIthElmtNodesNum(const int &i)const{return _ElmtConn[i-1][0];}//第i单元的节点数
     inline int  GetBulkMeshIthBulkElmtNodesNum(const int &i)const{return _ElmtConn[i+_nElmts-_nBulkElmts-1][0];}
     
-    inline int  GetBulkMeshIthElmtJthNodeID(const int &i,const int &j)const{return _ElmtConn[i-1][j];}
-    inline int  GetBulkMeshIthBulkElmtJthNodeID(const int &i,const int &j)const{return _ElmtConn[i+_nElmts-_nBulkElmts-1][j];}
+    inline int  GetBulkMeshIthElmtJthNodeID(const int &i,const int &j)const{return _ElmtConn[i-1][j];}//返回第i个单元的j节点
+    inline int  GetBulkMeshIthBulkElmtJthNodeID(const int &i,const int &j)const{return _ElmtConn[i+_nElmts-_nBulkElmts-1][j];}//返回第i个bulk单元的j节点号
     inline void GetBulkMeshIthElmtNodeIDs(const int &i,vector<int> &elConn)const{
         for(int j=1;j<=_ElmtConn[i-1][0];j++) elConn[j-1]=_ElmtConn[i-1][j];
-    }
+    }//计算第i个单元的连接节点号vector<int>到elConn[0到连接数-1]
     inline vector<int> GetBulkMeshIthElmtNodesID(const int &i)const{
         vector<int> conn(_ElmtConn[i-1][0],0);
         for(int j=1;j<=_ElmtConn[i-1][0];j++) conn[j-1]=_ElmtConn[i-1][j];
         return conn;
-    }
+    }//返回第i个单元的连接节点号vector<int>
     inline int GetBulkMeshIthElmtIDViaPhyName(string phyname,const int &id)const{
         for(const auto &it:_PhysicalName2ElmtIDsList){
             if(it.first==phyname){
@@ -201,7 +251,7 @@ public:
         }
         return -1;
     }
-    inline int GetBulkMeshIthElmtNodesNumViaPhyName(const string phyname,const int &id)const{
+    inline int GetBulkMeshIthElmtNodesNumViaPhyName(const string phyname,const int &id)const{//通过分组名字获取第i单元的连接节点数
         int e;
         for(const auto &it:_PhysicalName2ElmtIDsList){
             if(it.first==phyname){
@@ -211,12 +261,12 @@ public:
         }
         return -1;
     }
-    inline vector<int> GetBulkMeshIthElmtNodeIDs(const int &i)const{
+    inline vector<int> GetBulkMeshIthElmtNodeIDs(const int &i)const{//返回第i个单元的连接节点号vector<int>
         vector<int> temp(_ElmtConn[i-1][0],0);
         for(int j=1;j<=_ElmtConn[i-1][0];j++) temp[j-1]=_ElmtConn[i-1][j];
         return temp;
     }
-    inline void GetBulkMeshIthBulkElmtConn(const int &e,vector<int> &conn)const{
+    inline void GetBulkMeshIthBulkElmtConn(const int &e,vector<int> &conn)const{//计算第e个bulk单元的连接节点号vector<int>到conn[0到连接数-1]
         for(int i=1;i<=GetBulkMeshIthBulkElmtNodesNum(e);i++){
             conn[i-1]=GetBulkMeshIthBulkElmtJthNodeID(e,i);
         }
@@ -326,7 +376,7 @@ protected:
     int _nNodes,_nElmts;
     int _nNodesPerBulkElmt,_nNodesPerSurfaceElmt,_nNodesPerLineElmt;
     int _nBulkElmts,_nSurfaceElmts,_nLineElmts;
-    int _nMaxDim,_nMinDim;
+    int _nMaxDim,_nMinDim, _nSpaceDim;
     int _Nx,_Ny,_Nz;
     double _Xmax,_Xmin,_Ymax,_Ymin,_Zmin,_Zmax;
     int _nOrder;
@@ -334,6 +384,7 @@ protected:
     vector<double>      _NodeCoords;// store all the nodes/controlpts' coordinate
     vector<vector<int>> _ElmtConn;  // store all the element(bulk+surface+line+node elements)
     vector<double>      _ElmtVolume;// it could be: volume(3D), area(2D) or length(1D)
+	vector<double>      _NodeeqVolume;//=_ElmtVolume/NodesnumPerelmt and accumulate
 
     vector<int>         _ElmtVTKCellTypeList;
     vector<int>         _ElmtPhyIDList;
@@ -362,5 +413,41 @@ protected:
     vector<pair<int,string>>         _NodeSetPhysicalGroupID2NameList;
     vector<pair<string,int>>         _NodeSetPhysicalGroupName2IDList;
     vector<pair<string,vector<int>>> _NodeSetPhysicalName2NodeIDsList;
+
+	//************************************************************
+	//*** for the Amp/boundary/load information   =====XY======
+	//************************************************************
+	//vector<std::pair<pair<string, string>, vector<std::pair<double, double> >> > _AmpsTimeList;//amp name/type/value-table
+	//vector<std::pair<string, vector<int>> > _BoundaryDofList;
+	vector<std::pair<pair<string, string>, vector<double>> > _CLoadList;
+	vector<std::pair<vector<string>, double> > _DsLoadList;//string:amp,setname,type   double:value,directions
+	vector<std::pair<vector<string>, vector<double>> > _DLoadsList;//string:amp,setname,type   double:value,directions
+	vector<std::pair<string, std::vector<string>> > _LoadStrList;
+	//struct material_info {
+	//	string matname;
+	//	double density;
+	//	double Youngs_modulus;
+	//	double poisson;
+	//	double damp_alpha = 0.0;
+	//	double damp_beta = 0.0;
+	//};//Mate;
+	vector<material_info> _MateList;
+
+	int _BeamSectionNum;
+	int _SolidSectionNum;
+	int _ShellSectionNum;
+	//vector<pair<string, pair<double, double>> > _BeamSectionESetsandMatAdList;
+	vector<pair<array<string, 3>, pair<array<double, 2>, array<double, 3>>> > _BeamSectionESetsandMatAdList;
+
+	vector<pair<pair<string, string>, double>> _SolidSectionESetsandMatAList;
+	vector<pair<pair<string, string>, double>> _ShellSectionESetsandMatTList;
+
+	//struct step_info {
+	//	//vector<int> static_run;
+	//	vector<std::pair<pair<string, string>, vector<std::pair<double, double> >> > _AmpsTimeList;	
+	//	vector<std::pair<string, vector<int>> > _BoundaryDoFList;
+	//	//vector<std::pair<string, vector<double>> > CLoad;
+	//	//vector<int> output;
+	//}Step;		//History
 
 };

@@ -120,7 +120,13 @@ void LagrangeShapeFun::PreCalc(){
             case MeshType::TET10:
                 _nFuns=10;
                 _nOrder=2;
-                break;
+				break;
+			// ==XY====
+			case MeshType::POINT:
+				_nFuns = 1;
+				_nOrder = 0;// 1;
+				break;
+
             default:
                 MessagePrinter::PrintErrorTxt("unsupported mesh type in AsFem, currently we only support 1D: edge2, edge3, edge4 shape function, 2D: quad4, quad8, quad9 and tri3, tri6 shape function, 3D: hex8, hex20, hex27 and tet4, tet10 shape function");
                 MessagePrinter::AsFem_Exit();
